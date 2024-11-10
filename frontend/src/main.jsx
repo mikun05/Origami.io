@@ -2,9 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import CreaseLoader from './components/CreaseLoader'
 import './index.css'
+import App from './App'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <CreaseLoader />
+    <App />
   </StrictMode>,
 )

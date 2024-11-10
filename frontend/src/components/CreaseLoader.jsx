@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 const CreaseLoader = () => {
   const [file, setFile] = useState(null);
+  const [responseMessage, setResponseMessage] = useState('');
 
   const handleFileChange = (e) => {
     if (e.target.files) {
@@ -10,37 +11,41 @@ const CreaseLoader = () => {
     }
   };
 
-  // const handleUpload = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent the default form submission
 
-  //   if (file) {
-  //       console.log('Uploading file...');
+    if (!file) {
+      setResponseMessage('Please select a file to upload.');
+      return;
+    }
 
-  //       const formData = new FormData();
-  //       console.log('f', file)
-  //       formData.append('file', file);
-  
-  //       try {
-  //         // You can write the URL of your server or any other endpoint used for file upload
-  //         const result = await fetch('http://localhost:5000/data', {
-  //           method: 'POST',
-  //           body: formData,
-  //           name: 'file'
-  //         });
-  
-  //         const data = await result.json();
-  
-  //         console.log('d', data);
-  //       } catch (error) {
-  //         console.error(error);
-  //       }
-  //     }
-  //   };
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:5000/data', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setResponseMessage(result.message); // Display server response
+    } catch (error) {
+      setResponseMessage('Error uploading file.');
+      console.error('Error:', error);
+    }
+  };
+
 
   console.log(file)
 
   return (
     <>
-      <form action="http://localhost:5000/data" encType="multipart/form-data" method="post">
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
         <div className="input-group">
           <input name="file" type="file" onChange={handleFileChange} />
 
@@ -51,9 +56,11 @@ const CreaseLoader = () => {
       </form>
 
 
-
+      {responseMessage && <p>{responseMessage}</p>}
     </>
   );
 };
 
 export default CreaseLoader;
+
+
