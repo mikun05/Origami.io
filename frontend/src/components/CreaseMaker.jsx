@@ -1,155 +1,183 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 /* eslint-disable react/no-unknown-property */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { DXFLoader } from 'three-dxf-loader'
+import { fileContext } from '../contexts/fileContext';
 
+const DrawMesh = (props) => {
+  console.log('drawing mesh')
 
-const Box = (props) => {
-  const meshRef = useRef(null)
-  const [hovered, setHover] = useState(false)
-  const [active, setActive] = useState(false)
-  useFrame((state, delta) => (meshRef.current.rotation.x += delta))
+  const polyRef = useRef()
+
+  const color = props.isPaper() ? "#4F4F4F" : "#333333"
+          
+  const shape = new THREE.Shape();
+  shape.moveTo( props.entity.vertices[0][0],  props.entity.vertices[0][1]); //sets starting vertex of the polygon
+
+  // Adds line segments of each polygon 
+  for (let i = 1; i <  props.entity.vertices.length; i++) {
+      const [x, y] =  props.entity.vertices[i];
+      shape.lineTo(x, y);
+  }
 
   return (
-    <mesh
-      {...props}
-      ref={meshRef}
-      scale={active ? 1.5 : 1}
-      onClick={(event) => setActive(!active)}
-      onPointerOver={(event) => setHover(true)}
-      onPointerOut={(event) => setHover(false)}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={hovered ? 'hotpink' : '#2f74c0'} />
-    </mesh>
-  )
-  }
+    <>
+      <mesh
+        // ref={polyRef}
+        onClick={(e) => console.log(e)}
+        >
+          <shapeGeometry args={[shape]}/>
+          <meshBasicMaterial color={color} side={THREE.DoubleSide} />
+      </mesh>
 
-  const DrawCrease = (props) => {
-    const groupRef = useRef();
-  
-    useEffect(() => {
-      if (!props.dxfData) return;
-  
-      // const loader = new DXFLoader();
-      // const parsedData = loader.parse(props.dxfData);
-      const parsedData = props.dxfData
-      console.log('pp', Object.keys(parsedData))
-      
-      Object.keys(parsedData).forEach(key => {
-        console.log(key)
-        if (['Polygon', 'Paper'].includes(key)) {
-          const loop = (key === 'Paper') ? [(parsedData[key])[1]] : parsedData[key] 
-          loop.forEach((entity) => {
+    {!props.isPaper() && (
 
-            const color = (key === 'Paper') ? "#4F4F4F" : "#333333"
+      <lineSegments
+        // ref={polyRef}
+        onClick={(e) => console.log('line', e)}
+        >
+          <edgesGeometry args={[new THREE.ShapeGeometry(shape)]}/>
+          <lineBasicMaterial color="#FF0000"/>
+      </lineSegments>
 
-            
-            const shape = new THREE.Shape();
-            shape.moveTo( entity.vertices[0][0],  entity.vertices[0][1]);
-
-
-            // Add line segments
-            for (let i = 1; i <  entity.vertices.length; i++) {
-                const [x, y] =  entity.vertices[i];
-                shape.lineTo(x, y);
-            }
-
-            // Create geometry and mesh
-            const geometry = new THREE.ShapeGeometry(shape);
-            const material = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-
-            groupRef.current.add(mesh);
-          })
-        }  else if (['Valley', 'Mountain', 'CrimpValley', 'CrimpMountain'].includes(key)) {
-          parsedData[key].forEach((entity) => {
-            const start = new THREE.Vector3(entity.start[0], entity.start[1], entity.start[2]);
-            const end = new THREE.Vector3(entity.end[0], entity.end[1], entity.end[2]);
-
-            const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
-          
-            const material = new THREE.LineBasicMaterial({ color: entity.color, depthTest: false});
-            const line = new THREE.Line(geometry, material);
-            line.renderOrder = 1
-
-            groupRef.current.add(line);
-          })
-        }
-     
-  
-      
-      // parsedData.dxf.entities.forEach((entity) => {
-      //   if (entity.type === 'LWPOLYLINE' || entity.type === 'POLYLINE') {
-      //     const points = entity.vertices.map((vertex) => new THREE.Vector3(vertex.x, vertex.y, 0));
-      //     const geometry = new THREE.BufferGeometry().setFromPoints(points);
-      //     const line = new THREE.Line(geometry, material);
-      //     groupRef.current.add(line);
-      //   }
-      // });
-    
-      
-      
-      return () => groupRef.current.clear();
-    }, [props.dxfData]);
-    })
-    return <group ref={groupRef} />;
-  };
-
-
-
-const CreaseMaker = () => {
- //aim, take in data from dxf file in data and use this to create a workable mesh in threeJS
-  const [file, setFile] = useState(null);
-  const [error, setError] = useState(null);
-  const [info, setInfo] = useState(null);
-
-  const fetchCrease = async () => {
-    try {
-      const response = await fetch('/data/data.json');
-      if (!response.ok) throw new Error('Failed to fetch data');
-      const data = await response.json();
-      console.log('Fetched Data:', data);
-      setFile(data); 
-    } catch (err) {
-      console.error('Error fetching JSON:', err);
-      setError('No data found');
+    ) 
     }
-  };
+    </>
+  )
+}
+
+const DrawLine = (props) => {
+  console.log('drawing line')
 
 
-  const onRebuildCrease = () => {
-    fetchCrease();
-    setInfo(
-      <Canvas camera={{ position: [0, 0, 800], fov: 45 }}>
-        <ambientLight intensity={0.5} />
-        <spotLight position={[500, 500, 500]} angle={0.3} penumbra={1} intensity={1} />
-        <pointLight position={[-500, -500, 500]} intensity={0.7} />
-        {/* <ambientLight intensity={Math.PI / 2} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} decay={0} intensity={Math.PI} />
-        <pointLight position={[-10, -10, -10]} decay={0} intensity={Math.PI} /> */}
-        {file && <DrawCrease dxfData={file} position={[0, 0, 0]} />}
-        {/* <Box position={[1.2, 0, 0]} /> */}
-      </Canvas>
-    )
+  // Verify start and end points
+  const { start, end, color } = props.entity;
+  console.log(start, end, color)
+
+  const points = [new THREE.Vector3(start[0], start[1], start[2]), new THREE.Vector3(end[0], end[1], end[2])];
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(points)
+
+  return (
+    <line 
+      key={props.key}
+      renderOrder={1} 
+      geometry={geometry}
+      onClick={(e) => console.log(props.creaseType, e)}>
+      <lineBasicMaterial attach="material" color={color || 'yellow'} depthTest={false} linewidth={10}/>
+    </line>
+  );
+}
+
+const DrawCrease = (props) => {
+
+  const dataCategories = Object.keys(props.dxfData)
+
+  console.log('draw crease called', dataCategories)
+
+
+  return(
+    <>
+
+       { dataCategories.map(category => {
+        console.log(category)
+          const loop = (category === 'Paper') ? [(props.dxfData[category])[1]] : props.dxfData[category] 
+           if (['Polygon', 'Paper'].includes(category)) {
+            console.log('loop', loop)
+
+            return(
+              loop.map((entity, index) => {
+                console.log(entity)
+                return(<DrawMesh entity={entity} key={index} isPaper={() => (category === 'Paper')}/>)
+            }
+            ))
+           
+      
+          } else if (['Valley', 'Mountain', 'CrimpValley', 'CrimpMountain'].includes(category)) {
+            
+            return(
+              loop.map((entity, index) => {
+                console.log(entity)
+                return(<DrawLine entity={entity} key={index} creaseType={category}/>)
+              })  
+            )
+          } 
+         })
+       }
+    </>
+     
+)
+}
+    
+
+
+const CreaseMaker = (props) => {
+ //aim, take in data from dxf file in data and use this to create a workable mesh in threeJS
+  const [error, setError] = useState(null);
+
+  const file = useContext(fileContext);
+
+  const groupRef = useRef();
+  const rotationSpeed = 0.5
+
+  const [isDrag, setDrag] = useState(false)
+  const [resetRotate, setResetRotate] = useState(false)
+  const [prevPos, setPrevPos]  = useState(null)
+
+  console.log('pls', file)
+
+
+  const cameraPos = () => {
+    return { position: [0, 0, 600]}
   }
 
+
+
+  const handleMouseDown = () => {
+    setDrag(true)
+  }
+
+  const handleMouseMove = (event) => {
+
+    if (isDrag ) {
+      let { clientX, clientY, currentTarget } = event;
+      const { width, height } = currentTarget.getBoundingClientRect();
+      console.log('bounding stuff', width, height)
+
+      const rotationX = ((clientY / height) - 0.5) * Math.PI * 2 * rotationSpeed;
+      const rotationY = ((clientX / width) - 0.5) * Math.PI * 2 * rotationSpeed;
+      groupRef.current.rotation.x = rotationX;
+      groupRef.current.rotation.y = rotationY;
+    } 
+  };
+
+  const handleMouseUp = () => {
+    setDrag(false)
+  }
 
   useEffect(() => {
-    fetchCrease();
-  }, []);
+    if (resetRotate) {
+      groupRef.current.rotation.x = 0;
+      groupRef.current.rotation.y = 0;
+    } 
+  }, [resetRotate])
 
 
+  
 
 
   return (
-    <div>
-      <button onClick={onRebuildCrease}>ReBuild Crease</button>
-      <div style={{width:800+'px', height:800+'px', margin:20+'px'}}>
-        {info}
-      </div>
+    <div  style={{display: 'flex', flexDirection: 'column', margin: 'auto', width:'1000px',  height:'800px'}}>
+    
+      <button onClick={() => setResetRotate(!resetRotate)}>Reset Crease Rotation</button>
+      {file ? (
+        <Canvas onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} camera={cameraPos()}>
+          <group ref={groupRef}><DrawCrease dxfData={file} position={[0, 0, 0]} /></group>
+        </Canvas>
+      ) : <p>{'nop'}</p>}
+
       
     </div>
   );

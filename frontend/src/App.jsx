@@ -1,19 +1,17 @@
-import { useState } from 'react'
 import './App.css'
 import CreaseLoader from './components/CreaseLoader'
-import CreaseMaker from './components/CreaseMaker'
+
+
 
 function App() {
 
   
-
+ 
   return (
-    <>
+    <div style={{display: 'flex', flexDirection: 'column', gap:'1rem'}}>
 
     <CreaseLoader />
-    <CreaseMaker /> 
-
-    </>
+    </div>
   )
 }
 

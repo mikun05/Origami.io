@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import CreaseMaker from './CreaseMaker';
+import { fileContext } from '../contexts/fileContext';
+
 
 const CreaseLoader = () => {
   const [file, setFile] = useState(null);
+  const [creasableFile, setCreasableFile] = useState(null);
   const [responseMessage, setResponseMessage] = useState('');
 
   const handleFileChange = (e) => {
@@ -34,30 +38,46 @@ const CreaseLoader = () => {
 
       const result = await response.json();
       setResponseMessage(result.message); // Display server response
+      fetchCrease()
     } catch (error) {
       setResponseMessage('Error uploading file.');
       console.error('Error:', error);
     }
   };
 
+  const fetchCrease = async () => {
+    
+    try {
+      const response = await fetch('/data/data.json');
+      if (!response.ok) throw new Error('Failed to fetch data');
+      const data = await response.json();
+      console.log('Fetched Data:', data);
+      setCreasableFile(data); 
+    } catch (err) {
+      console.error('Error fetching JSON:', err);
+    }
+  };
 
-  console.log(file)
+
 
   return (
-    <>
-      <form onSubmit={handleSubmit} encType="multipart/form-data">
+    <div style={{margin:'auto', display: 'flex', flexDirection: 'column'}}>
+      <form style={{margin:'auto'}} onSubmit={handleSubmit} encType="multipart/form-data">
         <div className="input-group">
           <input name="file" type="file" onChange={handleFileChange} />
 
+          
           {file && 
             <input type="submit" value="Upload File"></input>
           }
         </div>
       </form>
 
-
-      {responseMessage && <p>{responseMessage}</p>}
-    </>
+      <div style={{margin:'auto'}}>
+        {responseMessage && <p>{responseMessage}</p>}
+      </div>
+      {file ?  <fileContext.Provider value={creasableFile}><CreaseMaker /></fileContext.Provider> : ''}
+    </div>
   );
 };
 
