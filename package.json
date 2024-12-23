@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@react-three/drei": "^9.117.3",
     "dxf-viewer": "^1.0.36"
   }
 }

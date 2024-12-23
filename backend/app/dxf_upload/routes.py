@@ -29,6 +29,60 @@ def upload_file():
             return ("File type not allowed. Please upload a .dxf file.")
     
     return('WE NOT POSTING...')
+
+def convert_to_fold(file_path):
+    doc = ezdxf.readfile(file_path)
+    
+    msp = doc.modelspace()
+    
+    vertex_list = []
+    
+    fold_format = {
+        "file_version": '',
+        "file_creator": '',
+        "file_author": '',
+        "file_class": '',
+        "frame_title": '',
+        "vertices_coord": [],
+        'faces_vertices': [],
+        'edges_vertices': [],
+        'edges_assignments': [],
+        'faceOrders': []   
+    }
+    
+    for polyline in msp.query('POLYLINE'):
+        vertices = [(v.dxf.location.x, v.dxf.location.y, v.dxf.location.z) for v in polyline.vertices]
+        vertex_list += vertices
+
+            
+    for line in msp.query('LINE'):
+        vertices = [(line.dxf.start.x, line.dxf.start.y, line.dxf.start.z), (line.dxf.end.x, line.dxf.end.y, line.dxf.end.z)]
+        vertex_list += vertices
+
+        
+
+    
+    
+    # for entity in msp.query():
+    #     vertices = [(v.dxf.location.x, v.dxf.location.y, v.dxf.location.z) for v in entity.vertices]
+    #     vertex_list += vertices
+    #     # vertex_set.add(vertex)
+    #     # vertex_set.add('huh')
+    
+    seen = set()
+    unduplicated = []
+    for vertex in vertex_list:
+        if vertex not in seen:
+            unduplicated.append(vertex)
+            seen.add(vertex)
+        
+
+    # vertex_set.add('hah')
+
+    fold_format['vertices_coord'] = unduplicated
+    
+    return(fold_format)
+    
         
         
 def process_dxf_file(file_path):
@@ -90,8 +144,13 @@ def save_dxf_file(file, type):
         
         parsed_data = process_dxf_file(file_path)
         parsed_data_file_path = os.path.join(UPLOAD_FOLDER, 'data.json') #saves parsed data from dxf
+        
+        fold_file = convert_to_fold(file_path)
+        fold_file_file_path = os.path.join(UPLOAD_FOLDER, 'data.fold') #saves parsed data from dxf
 
         save_parsed_data_as_json(parsed_data, parsed_data_file_path)
+        save_parsed_data_as_json(fold_file, fold_file_file_path)
+
         return jsonify(message=f"{type} file saved successfully")
     
 
