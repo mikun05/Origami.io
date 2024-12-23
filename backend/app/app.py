@@ -1,6 +1,6 @@
 from flask import Flask, redirect, render_template, request, jsonify, url_for
 from flask_cors import CORS, cross_origin
-from dxf_upload.routes import dxf_upload_bp
+from uploaders.dxf_upload import dxf_upload_bp
 import os
 
 app = Flask(__name__)
