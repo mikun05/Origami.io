@@ -8,6 +8,7 @@ class SmoothFoldGeometry(CreasePattern):
         The cross product of two non-parallel edges of the face
         """
         
+        
         face_edges = self.get_face_edges(face)
         
         non_parallel_edges = [e for e in face_edges if face[0] in e] ##gets all edges that share a vertex in face ... necessarily non-parallel
@@ -22,13 +23,13 @@ class SmoothFoldGeometry(CreasePattern):
         
         return np.cross(e1, e2)
               
-    def calculate_fold_angles(self, faceA, faceB):
+    def calculate_fold_angles(self, faceA, faceB, foldType="V"):
         """
         Compute the dihedral angle between two faces
         This is called by another function which takes an edge as parameter, and finds the two faces which share that edge
         (implement later) If the edge is a valley, this is positive, if it is a mountain, this is negative
         """
-        
+        scale = -1 if foldType == "M" else 1
         n1 = self.compute_face_normal(faceA)
         n2 = self.compute_face_normal(faceB)
         
@@ -39,7 +40,8 @@ class SmoothFoldGeometry(CreasePattern):
         
         angle = np.arccos(dot_product)
         
-        fold_angle = np.pi - angle
+        fold_angle = scale * (np.pi - angle)
 
         return fold_angle
+    
     

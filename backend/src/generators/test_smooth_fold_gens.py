@@ -22,7 +22,42 @@ class TestSmoothFoldGeometry(unittest.TestCase):
                 "B", "M", "M", "B", "B", "V", "V", "B", "M", "M", "B", "B",
             ]
         }
-        self.geometry = SmoothFoldGeometry(self.fold_data)        
+        
+        self.simple_valley = {
+            "vertices_coords": [
+                [0,0,0], [0,1,0], [1,0,0], [0.5,0.5,1]
+            ],
+            "edges_vertices": [
+               [0,1], [0, 2], [1,2], [2,3], [1,3]
+            ],
+            "faces_vertices": [
+                [2,0,1], [3,2,1]
+            ],
+            "edges_assignment": [
+                "B","B","V","B","B"
+            ]
+        }
+        
+        self.simple_mountain = {
+            "vertices_coords": [
+                [0,0,0], [0,1,0], [1,0,0], [0.5,0.5,-1]
+            ],
+            "edges_vertices": [
+               [0,1], [0, 2], [1,2], [2,3], [1,3]
+            ],
+            "faces_vertices": [
+                [2,0,1], [3,2,1]
+            ],
+            "edges_assignment": [
+                "B","B","M","B","B"
+            ]
+        }
+        
+        self.geometry = SmoothFoldGeometry(self.fold_data)  
+        self.geometry_folded_valley = SmoothFoldGeometry(self.simple_valley)   
+        self.geometry_folded_mountain = SmoothFoldGeometry(self.simple_mountain)        
+     
+      
         
 
     def test_compute_face_normal(self):
@@ -51,9 +86,28 @@ class TestSmoothFoldGeometry(unittest.TestCase):
         expected_fold_angle = 0
         result_fold_angle = self.geometry.calculate_fold_angles(faceA, faceB)
         self.assertEqual(result_fold_angle, expected_fold_angle)
+        
+    def test_calculate_fold_angles_valley(self):
+        """
+        Test calculating the fold angles (should be >0 for flat crease patterns).
+        """
+        faceA = [2,0,1]
+        faceB = [3,2,1]
+        expected_angle = np.pi / 2
+        result_fold_angle = self.geometry_folded_valley.calculate_fold_angles(faceA, faceB)
+        self.assertEqual(result_fold_angle, expected_angle)
+        
+    def test_calculate_fold_angles_mountain(self):
+        """
+        Test calculating the fold angles (should be <0 for flat crease patterns).
+        """
+        faceA = [2,0,1]
+        faceB = [3,2,1]
+        expected_angle = - (np.pi / 2)
+        result_fold_angle = self.geometry_folded_mountain.calculate_fold_angles(faceA, faceB, 'M')
+        self.assertEqual(result_fold_angle, expected_angle)
 
    
    
-      
 if __name__ == "__main__":
     unittest.main()
