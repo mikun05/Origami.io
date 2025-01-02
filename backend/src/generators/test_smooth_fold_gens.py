@@ -8,7 +8,7 @@ class TestSmoothFoldGeometry(unittest.TestCase):
         Set up the test with mock fold data.
         Waterbomb Base
         """
-        self.fold_data = {
+        self.crease_pattern = {
             "vertices_coords": [
                 [0, 2, 0], [2, 2, 0], [2, 1, 0], [2, 0, 0], [0, 0, 0], [0, 1, 0], [1, 1, 0]
             ],
@@ -16,7 +16,7 @@ class TestSmoothFoldGeometry(unittest.TestCase):
                 [0, 1], [0, 6], [1, 6], [0, 5], [1,2], [5,6], [6,2], [5,4], [6,4], [6,3], [2,3], [4,3]
             ],
             "faces_vertices": [
-                [6,0,1], [6,1,2], [6,2,3], [6,3,4], [6,4,5], [6,5,0]
+                [6,1,0], [6,2,1], [6,3,2], [6,4,3], [6,5,4], [6,0,5]
             ],
             "edges_assignment": [
                 "B", "M", "M", "B", "B", "V", "V", "B", "M", "M", "B", "B",
@@ -53,7 +53,7 @@ class TestSmoothFoldGeometry(unittest.TestCase):
             ]
         }
         
-        self.geometry = SmoothFoldGeometry(self.fold_data)  
+        self.geometry = SmoothFoldGeometry(self.crease_pattern)  
         self.geometry_folded_valley = SmoothFoldGeometry(self.simple_valley)   
         self.geometry_folded_mountain = SmoothFoldGeometry(self.simple_mountain)        
      
@@ -64,8 +64,8 @@ class TestSmoothFoldGeometry(unittest.TestCase):
         """
         Test the computation of face normals.
         """
-        face = [6,0,1]  # Triangular face
-        expected_normal = np.array([0,0,-1])  # Plane lies on z-axis Since face vertex are listed counter clockwise
+        face = [6,1,0]  # Triangular face
+        expected_normal = np.array([0,0,1])  # Plane lies on z-axis Since face vertex are listed counter clockwise
         computed_normal = self.geometry.compute_face_normal(face)
 
         # Normalize to compare direction
@@ -81,7 +81,7 @@ class TestSmoothFoldGeometry(unittest.TestCase):
         """
         Test calculating the fold angles (should be 0 for flat crease patterns).
         """
-        faceA = [6,2,3]
+        faceA = [6,3,2]
         faceB = [6,4,3]
         expected_fold_angle = 0
         result_fold_angle = self.geometry.calculate_fold_angles(faceA, faceB)

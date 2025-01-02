@@ -23,6 +23,16 @@ class TestCreasePattern(unittest.TestCase):
         }
         self.cp = CreasePattern(self.fold_data)
         
+        
+    def test_get_face_edge(self):
+        """
+        Test edges of a face
+        """
+        face = [1, 2, 3, 4, 5]
+        expected_edges = [[1,2], [2,3], [3,4], [4,5], [5,1]]
+        result_edges = self.cp.get_face_edges(face)
+        self.assertEqual(result_edges, expected_edges)
+        
 
     def test_get_faces_surrounding_edge(self):
         """

@@ -1,11 +1,13 @@
 import numpy as np
 from src.data_extractors.crease_pattern import CreasePattern
 
+#global plane's normal vector ... should be 0,0,1
 class SmoothFoldGeometry(CreasePattern):
     def __init__(self, fold_data):
         """
         Initialize the crease pattern with the FOLD format data.
         """
+        super().__init__(fold_data)  # Initialize parent class
         self.fold_width = 0.05
         self.curve_strength = 0.5 #set to symmetric folds
         #self.fold_angles = fold_data.get('edges_foldAngle', [])
@@ -16,20 +18,18 @@ class SmoothFoldGeometry(CreasePattern):
         The cross product of two non-parallel edges of the face
         """
         
+        face_edges = self.get_face_edges(face) ##edges are given in counter clockwise order
         
-        face_edges = self.get_face_edges(face)
         
-        non_parallel_edges = [e for e in face_edges if face[0] in e] ##gets all edges that share a vertex in face ... necessarily non-parallel
+        non_parallel_edges = [face_edges[0], face_edges[1]]
         
-        if len(non_parallel_edges) != 2:
-            print('Calc Error: Number of edges meeting at face vertex should be 2')
-        else:
-            [edge1, edge2] = self.convert_to_actual_coords(non_parallel_edges)
-            
-        e1 = np.array(edge1[0] if edge1[1] == face[0] else edge1[1]) - np.array(self.vertices[face[0]])
-        e2 = np.array(edge2[0] if edge2[1] == face[0] else edge2[1]) - np.array(self.vertices[face[0]])
+        [edge1, edge2] = self.convert_to_actual_coords(non_parallel_edges)
         
-        return np.cross(e1, e2)
+        v1 = np.array(edge1[1]) - np.array(edge1[0])
+        v2 = np.array(edge2[1]) - np.array(edge2[0])
+
+        
+        return np.cross(v1, v2)
     
     def compute_local_basis(self, face):
         """
@@ -69,7 +69,7 @@ class SmoothFoldGeometry(CreasePattern):
         
         angle = np.arccos(dot_product)
         
-        fold_angle = scale * (np.pi - angle)
+        fold_angle = scale * angle ##scale * (np.pi - angle) -> result from book assuming normla in flat crease pattern is [0,0,-1] but I have now made it so that it is [0, 0, 1] 
 
         return fold_angle
     
@@ -174,3 +174,101 @@ class SmoothFoldGeometry(CreasePattern):
         return F
         
         
+class SmoothFoldPattern():
+    def __init__(self, vertices):
+        """
+        Set up smooth fold pattern as a set of smoothFoldPatternVertex
+        """
+        self.vertices = [SmoothFoldPatternVertex(vertex) for vertex in vertices]
+        
+        ##later number the vertices and push this number down to the functions of that vertex. So if on vertec n, prepend n to all values i.e., angle_jk, edge_mk
+    
+    
+class SmoothFoldPatternVertex(SmoothFoldGeometry):
+    def __init__(self, vertex):
+        """
+        Set up smooth fold pattern as a set of smoothFoldPatternVertex
+        """
+        self.surrounding_edges = self.order_edges_counterclockwise(vertex) ##returns edges numbered m1, to mk, in counterclockwise order
+        self.surrounding_faces = self.get_faces_surrounding_vertex(vertex) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
+        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
+        
+    def order_edges_counterclockwise(self, vertex):
+        """
+        Order the edges around vertx v counter clockwise
+        This returns the actual vertices of the edges also, not the pointers to the vertex set
+        """
+        ##Take vertex v as origin and compute e_x and e_y from v, using arctan to calculate angle where vertex v is the origin. Then order based on increase in angle
+        ##Note, would also neeed to keep track if which folds are mountain and valley and reoarder edge assignment accordingly. 
+        ##New structure, {edge: coords, type: M/B/V}
+        edges = self.convert_to_actual_coords(self.get_edges_surrounding_vertex(vertex)) #each edge in the from (u,v)
+        
+        unordered_edge = []
+        
+        for (i, edge) in enumerate(edges):
+            edge_vector = np.array(edge[1]) - np.array(edge[0]) #edge vector = v - u
+            [e_x, e_y, e_z] = np.array(edge_vector) - np.array(vertex)
+            
+            angle_from_vertex = np.arctan2(e_y, e_x)
+            
+            unordered_edge.append({'edge': edge,
+                                   'angle': angle_from_vertex,
+                                   'type': self.edges_assignments[i]})
+            
+        def sort_according_to_angle(edge):
+            return edge.angle
+        ##now reorder according to increase in angle to obtain counterclockwise order of edges.
+        sorted_edges = unordered_edge.sort(key=sort_according_to_angle)
+        
+        #edge_vector = np.array(edges[1]) - np.array(edges[0]) #edge vector = v - u
+        ##next STEP HERE
+        return sorted_edges
+                
+    def get_face_between_edges(self, edge_1, edge_2):
+        (adj, shared) = self.check_adjacent_edges(edge_1, edge_2)
+        if adj:
+            return(shared)
+            
+    def get_faces_surrounding_vertex(self):
+        """
+        Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
+        Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
+        So we know that adjacent edges on the graph are adjacent in the list, with edges 1 to k then, 
+        Faces around the vertex are F_{i, i+1} until i = k, then we have the final face F_{i=k,0}
+        This gives me the faces in counter clockwise order
+        """
+        
+        number_of_edges = len(self.surrounding_edges)
+        
+        faces = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
+        
+        for i in range(number_of_edges-1):
+            faces.update({(i, i+1): self.get_face_between_edges(self.surrounding_edges[i].edges, self.surrounding_edges[i+1].edges )})
+            
+        faces.update({(number_of_edges-1, 0): self.get_face_between_edges(self.surrounding_edges[-1].edges, self.surrounding_edges[0].edges )})
+        
+        return faces
+    
+    def get_angles_surrounding_vertex(self):
+        """
+        Gets the angles surrounding vertex where angle_ij is the angle between self.surrounding_edges[i] and self.surrounding_edges[j] if the two edges are adjacent
+        Could do a running total type thing. 
+        So F_0,1 is the angle of edge 1 from vertex - angle of edge 0 from vertex
+        F_1,2 is the angle of edge 2 from vertex - 9angle of edge 1 from vertex
+        F_k,0 is 360 or 2pi - the sum of all other angles
+        """
+        number_of_edges = len(self.surrounding_edges)
+        
+        angles = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
+        sum_of_angles = 0
+        
+        for i in range(number_of_edges-1):
+            angle = self.surrounding_edges[i+1].angles - self.surrounding_edges[i].angles
+            angles.update({(i, i+1): angle})
+            sum_of_angles += angle
+            
+        angles.update({(number_of_edges-1, 0): np.pi - sum_of_angles})
+        
+        return angles
+    
+    
