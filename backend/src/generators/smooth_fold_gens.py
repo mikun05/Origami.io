@@ -179,21 +179,28 @@ class SmoothFoldPattern():
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
-        self.vertices = [SmoothFoldPatternVertex(vertex) for vertex in vertices]
+        self.vertices = self.format_vertices() #[SmoothFoldPatternVertex(vertex) for vertex in vertices]
         
+        def format_vertices(self):
+            smooth_fold_vertex = []
+            for (i, vertex) in enumerate(vertices):
+                smooth_fold_vertex.append(SmoothFoldPatternVertex(vertex, i))
+            
+            return smooth_fold_vertex
+                
         ##later number the vertices and push this number down to the functions of that vertex. So if on vertec n, prepend n to all values i.e., angle_jk, edge_mk
     
     
 class SmoothFoldPatternVertex(SmoothFoldGeometry):
-    def __init__(self, vertex):
+    def __init__(self, vertex, index=0):
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
-        self.surrounding_edges = self.order_edges_counterclockwise(vertex) ##returns edges numbered m1, to mk, in counterclockwise order
-        self.surrounding_faces = self.get_faces_surrounding_vertex(vertex) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
-        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
+        self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
+        self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
+        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex, index) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
         
-    def order_edges_counterclockwise(self, vertex):
+    def order_edges_counterclockwise(self, vertex, index):
         """
         Order the edges around vertx v counter clockwise
         This returns the actual vertices of the edges also, not the pointers to the vertex set
@@ -229,7 +236,7 @@ class SmoothFoldPatternVertex(SmoothFoldGeometry):
         if adj:
             return(shared)
             
-    def get_faces_surrounding_vertex(self):
+    def get_faces_surrounding_vertex(self, index):
         """
         Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
         Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
@@ -249,7 +256,7 @@ class SmoothFoldPatternVertex(SmoothFoldGeometry):
         
         return faces
     
-    def get_angles_surrounding_vertex(self):
+    def get_angles_surrounding_vertex(self, index):
         """
         Gets the angles surrounding vertex where angle_ij is the angle between self.surrounding_edges[i] and self.surrounding_edges[j] if the two edges are adjacent
         Could do a running total type thing. 
@@ -272,3 +279,5 @@ class SmoothFoldPatternVertex(SmoothFoldGeometry):
         return angles
     
     
+    
+##added index to each vertex but don't think incrementing all the counts, by the vertex num would be necessary.??
