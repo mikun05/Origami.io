@@ -48,3 +48,6 @@ def process_dxf_file(file_path):
 def save_parsed_data_as_json(parsed_data, json_output_path):
     with open(json_output_path, 'w') as json_file:
         json.dump(parsed_data, json_file, indent=2)
+        
+def smooth_fold_as_json():
+    pass

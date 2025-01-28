@@ -1,5 +1,48 @@
 import numpy as np
-from src.data_extractors.crease_pattern import CreasePattern
+
+from ..data_extractors.crease_pattern import CreasePattern
+#from src.data_extractors.crease_pattern import CreasePattern
+
+def R_1(theta):
+    cos = np.cos(theta)
+    sin = np.sin(theta)
+    
+    return np.matrix([1, 0, 0],
+                    [0, cos, -sin],
+                    [0, sin, cos])
+def R_3(theta):
+    cos = np.cos(theta)
+    sin = np.sin(theta)
+    
+    return np.matrix([cos, -sin, 0],
+                    [sin, cos, 0],
+                    [0, 0, 1])
+def Q_1(theta):
+        cos = np.cos(theta)
+        sin = np.sin(theta)
+                
+        return np.matrix([1, 0, 0, 0],
+                        [0, cos, -sin, 0],
+                        [0, sin, cos, 0],
+                        [0, 0, 0, 1]) 
+def Q_3(theta):
+    cos = np.cos(theta)
+    sin = np.sin(theta)
+    
+    return np.matrix([cos, -sin, 0, 0],
+                    [sin, cos, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1])
+def T(b):
+    """
+        b is a 3 elem vector
+    """
+    
+    return np.matrix([1, 0, 0, b[0]],
+                    [0, 1, 0, b[1]],
+                    [0, 0, 1, b[2]],
+                    [0, 0, 0, 1])
+    
 
 #global plane's normal vector ... should be 0,0,1
 class SmoothFoldGeometry(CreasePattern):
@@ -73,60 +116,67 @@ class SmoothFoldGeometry(CreasePattern):
 
         return fold_angle
     
-    def cubic_hermitan_interpolation_polys(l_1):
-        h_30 = (l_1 ^ 3)/4 - (3 * l_1)/4 + 1/2
-        
-        h_31 = (l_1 ^ 3)/4 - (l_1 ^ 2)/4 - (l_1)/4 + 1/4
-        
-        h_32 =  (l_1 ^ 3)/4 + (l_1 ^ 2)/4 - (l_1)/4 - 1/4
-        
-        h_33 = (-(l_1)^3)/4 + (3*l_1)/4 + 1/2
-        
-        return [h_30, h_31, h_32, h_33]
     
-    def define_normalised_parametric_curve(self, edge):
+    def define_normalised_parametric_curve(self, edge_obj):
         """
+        ON HOLD
         This function returns the function c^i_{t} which will take in l_1 as input.
         Implementing paramteric curves as described in 3.1 - Geometry of Smooth Folds
+        
+        edge is an instance of SmoothFoldPatternEdge
         """
-        w_i = self.compute_smooth_fold_width(edge) 
-        [faceA, faceB] = self.get_edges_surrounding_edge(edge)
-        theta_i = self.calculate_fold_angles(faceA, faceB, self.edges_assignments[self.edges.index(edge)])
-        alpha_i = self.compute_curve_strength(edge)
+        
+        w_i = edge_obj.width #width is w_i, self.compute_smooth_fold_width(edge) 
+        [faceA, faceB] = self.get_faces_surrounding_edge(edge_obj.edge_pointer) ##change to retrieve faces from source vertex numbering. Face retrieval shouldne always be based on vertex points since these change
+        theta_i = self.calculate_fold_angles(faceA, faceB, self.edges_assignments[self.edges.index(edge_obj.edge_pointer)])
+        alpha_i = edge_obj.curve_strength
+        
+        #print('thetai', theta_i)
         
         beta_L1 = beta_R1 = 1 ##free parameters but for not set to 1. 
         
         ##All results belowe are normalised
-        c_L0 = np.array([[0],
-                          [-(w_i) / 2],
-                          [0]]) #c^i(-1)
+        c_L0 = np.array([0,
+                        -(w_i) / 2,
+                        0]) #c^i(-1)
         
-        c_R0 = np.array([[0],
-                          [(w_i) / 2],
-                          [0]]) #c^i(1)
+        c_R0 = np.array([0,
+                        (w_i) / 2,
+                         0]) #c^i(1)
         
-        c_L1 = beta_L1 * np.array([[0],
-                                   [np.cos(alpha_i * theta_i)],
-                                   [-np.sin(alpha_i * theta_i)]]) 
-        c_R1 = beta_R1 * np.array([[0],
-                                   [np.cos((1 - alpha_i) * theta_i)],
-                                   [np.sin((1 - alpha_i) * theta_i)]])
+        c_L1 = beta_L1 * np.array([0,
+                                   np.cos(alpha_i * theta_i),
+                                   -np.sin(alpha_i * theta_i)]) 
+        c_R1 = beta_R1 * np.array([0,
+                                   np.cos((1 - alpha_i) * theta_i),
+                                   np.sin((1 - alpha_i) * theta_i)])
+        
+        def cubic_hermitan_interpolation_polys(l_1):
+            h_30 = (l_1 ^ 3)/4 - (3 * l_1)/4 + 1/2
+            
+            h_32 = (l_1 ^ 3)/4 - (l_1 ^ 2)/4 - (l_1)/4 + 1/4
+            
+            h_33 =  (l_1 ^ 3)/4 + (l_1 ^ 2)/4 - (l_1)/4 - 1/4
+            
+            h_31 = (-(l_1)^3)/4 + (3*l_1)/4 + 1/2
+            
+            return [h_30, h_31, h_32, h_33]
         
         
         def c(l_1):
-            h = self.cubic_hermitan_interpolation_polys
+            h = cubic_hermitan_interpolation_polys(l_1)
             return (h[0] * c_L0) + (h[1] * c_R0) + (h[2] * c_L1) + (h[3] * c_R1)
-        
         
         return c
     
-    def compute_direction_vector(self, edge):
+    def compute_direction_vector(self, width, edge_pointer, edge_vector):
         """
         This function returns the direction vector h^i_{t} for edge numbered i.
         It is based on the orientation of the faces adjacent to the given edge
         """
-        
-        [faceA, faceB] = self.get_faces_surrounding_edge(edge)
+        w_i = width #width is w_i, self.compute_smooth_fold_width(edge) 
+
+        [faceA, faceB] = self.get_faces_surrounding_edge(edge_pointer)
         
         n1 = self.compute_face_normal(faceA)
         n2 = self.compute_face_normal(faceB)
@@ -136,69 +186,93 @@ class SmoothFoldGeometry(CreasePattern):
         
         dot_product = np.dot(normalized_1, normalized_2)
         
-        
-        return dot_product
+        actual_direction_vector = edge_vector / np.linalg.norm(edge_vector)
+
+        print('edge', edge_vector)
+        print('direction vector', actual_direction_vector)
+        return actual_direction_vector 
     
-    def compute_smooth_fold_width(self, edge):
+
+    def smooth_fold_representation(self, edge_obj):
         """
-        This function returns the distance between position vectors c^i(-1) and c^i(1) 
-        Denoted in the text w_i
-        """
-        ###Seems I might have to initialise / choose the width of each fold myself, otherwise the definition ends up being circular. 
-        #####Develop further later to optimise the fold-width perhaps proportional to the length of the edge or to the angles / could also make this a user editable metric. 
-        # I.e., the fold width of a give edge can be selected and changed by the user. 
-        ##For now, simply return universal fold_width (same for all edges)
-        return self.fold_width
-    
-    def compute_curve_strength(self, edge):
-        """
-        This function returns the angle the left side of the smooth fold makes with the face adjacent to it. That is the extent of the curve
-        Denoted in the text a_i
-        """
-        ###Same as for the fold_width, this value need not be fixed, and should be optimised to have the fold match real life as much as possible.
-        ##For now, it is set to 0.5 to ensure that the curve/fold is symmetric. The angle the left side makes with the adjacent face on the left is equal to that of the right side with its adjacent face
-        return self.curve_strength
-    
-    def smooth_fold_representation(self, edge):
-        """
+        ON HOLD
         Smooth folds are ruled surfaces (Def 3).
         This function returns a given edge as a smooth fold
         """
         
-        parametric_curve = self.compute_smooth_fold_width * self.define_normalised_parametric_curve(edge)
-        direction_vector = self.compute_direction_vector(edge)
+        print('check:', self.define_normalised_parametric_curve(edge_obj))
+        
+        c = self.define_normalised_parametric_curve(edge_obj)
+        
+        #parametric_curve = edge_obj.width * c()
+        e1 = self.compute_direction_vector(edge_obj.width, edge_obj.edge_pointer, edge_obj.edge_vector)
+        e1_unit = e1 / np.linalg.norm(e1)
+        e2 = np.cross(np.array([0,0,1]), e1)
+        e2_unit = e2 / np.linalg.norm(e2)
+        
+        local_x = np.array([1, 0, 0])
+
+        # Compute the rotation axis and angle
+        axis = np.cross(local_x, e2_unit)
+        axis_norm = np.linalg.norm(axis)
+    
+        axis = axis / axis_norm
+        angle = np.arccos(np.dot(local_x, e2_unit))
+       
+        
+        def rotation_matrix(axis, angle):
+            cos_theta = np.cos(angle)
+            sin_theta = np.sin(angle)
+            one_minus_cos = 1 - cos_theta
+
+            x, y, z = axis
+            return np.array([
+                [cos_theta + x * x * one_minus_cos, x * y * one_minus_cos - z * sin_theta, x * z * one_minus_cos + y * sin_theta],
+                [y * x * one_minus_cos + z * sin_theta, cos_theta + y * y * one_minus_cos, y * z * one_minus_cos - x * sin_theta],
+                [z * x * one_minus_cos - y * sin_theta, z * y * one_minus_cos + x * sin_theta, cos_theta + z * z * one_minus_cos]
+            ])
+        
+        R = rotation_matrix(axis, angle)
         
         def F(l_1, l_2):
-            return parametric_curve(l_1) + (l_2 * direction_vector)
+            c_global = np.dot(c(l_1), R.T) # edge_obj.source_vertex
+            return (c(l_1)) #keep + (l_2 * np.array(e2_unit))
         
         return F
         
         
 class SmoothFoldPattern():
-    def __init__(self, vertices):
+    def __init__(self, fold_data):
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
-        self.vertices = self.format_vertices() #[SmoothFoldPatternVertex(vertex) for vertex in vertices]
+        self.geom = SmoothFoldGeometry(fold_data)
+        self.vertex_objects = self.format_vertices(self.geom.vertices) #[SmoothFoldPatternVertex(vertex) for vertex in vertices]
         
-        def format_vertices(self):
-            smooth_fold_vertex = []
-            for (i, vertex) in enumerate(vertices):
-                smooth_fold_vertex.append(SmoothFoldPatternVertex(vertex, i))
+    def format_vertices(self, vertices):
+        smooth_fold_vertex = []
+        for (j, vertex) in enumerate(vertices):
+            vertex_obj = SmoothFoldPatternVertex(self.geom, vertex, j)
+            smooth_fold_vertex.append(vertex_obj)
             
-            return smooth_fold_vertex
+        
+        return smooth_fold_vertex
                 
         ##later number the vertices and push this number down to the functions of that vertex. So if on vertec n, prepend n to all values i.e., angle_jk, edge_mk
     
     
-class SmoothFoldPatternVertex(SmoothFoldGeometry):
-    def __init__(self, vertex, index=0):
+class SmoothFoldPatternVertex:
+    def __init__(self, parent_crease, vertex, index):
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
+
+        self.parent_crease = parent_crease
+        self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
-        self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
-        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex, index) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
+        # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
+        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
+        self.enclosing_path = self.compute_simple_closed_path()
         
     def order_edges_counterclockwise(self, vertex, index):
         """
@@ -208,55 +282,86 @@ class SmoothFoldPatternVertex(SmoothFoldGeometry):
         ##Take vertex v as origin and compute e_x and e_y from v, using arctan to calculate angle where vertex v is the origin. Then order based on increase in angle
         ##Note, would also neeed to keep track if which folds are mountain and valley and reoarder edge assignment accordingly. 
         ##New structure, {edge: coords, type: M/B/V}
-        edges = self.convert_to_actual_coords(self.get_edges_surrounding_vertex(vertex)) #each edge in the from (u,v)
-        
+        edge_pointers = self.parent_crease.get_edges_surrounding_vertex(vertex) #each edge in the from (u,v)
         unordered_edge = []
         
-        for (i, edge) in enumerate(edges):
+        
+        ##make it a dict with key j,k
+        
+        for (k, edge_pointer) in enumerate(edge_pointers): #edge pointers
+            i = self.parent_crease.edges.index(edge_pointer) ##to get correct edge assignment
+
+
+            if self.parent_crease.edges_assignments[i] == 'B': ##excludes boundary edges and vertices
+                return []
+            
+            
+            # try:
+            #     [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
+            # except:
+            #     return [] # boundary vertex
+          
+
+            [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
+
+            theta_jk = self.parent_crease.calculate_fold_angles(faceA, faceB, self.parent_crease.edges_assignments[i]) ##might have to be pi - this value
+            ##if input is a flat crease pattern, theta is ALWAYS 0
+            edge = self.parent_crease.convert_to_actual_coords(edge_pointer)
+            
             edge_vector = np.array(edge[1]) - np.array(edge[0]) #edge vector = v - u
             [e_x, e_y, e_z] = np.array(edge_vector) - np.array(vertex)
             
             angle_from_vertex = np.arctan2(e_y, e_x)
             
-            unordered_edge.append({'edge': edge,
-                                   'angle': angle_from_vertex,
-                                   'type': self.edges_assignments[i]})
+            
+            edge_obj = SmoothFoldPatternEdge(index, k, edge, edge_pointer, vertex, edge_vector, 
+                                             self.parent_crease.fold_width, 
+                                             self.parent_crease.curve_strength, 
+                                             self.parent_crease.edges_assignments[i], 
+                                             theta_jk, angle_from_vertex, faceA, faceB)
+            ##Things that will be subject to change when bending are fold_width, curve strength, theta angle .. by intervention
+            ##edge_vector and edge will also change as a consquence of the above
+            
+            unordered_edge.append({'edge_obj': edge_obj,
+                                   'angle': angle_from_vertex ##this is phi(mjk). It is the cummulative angle
+                                   })
             
         def sort_according_to_angle(edge):
-            return edge.angle
+            #print(edge['angle'])
+            return edge['angle']
         ##now reorder according to increase in angle to obtain counterclockwise order of edges.
-        sorted_edges = unordered_edge.sort(key=sort_according_to_angle)
-        
-        #edge_vector = np.array(edges[1]) - np.array(edges[0]) #edge vector = v - u
-        ##next STEP HERE
-        return sorted_edges
+       # print(sorted(unordered_edge, key=lambda x: sort_according_to_angle(x)))
+
+        sorted_edges = [x['edge_obj'] for x in sorted(unordered_edge, key=lambda x: sort_according_to_angle(x))]
+        ##should return a list of edge_objects. in order of k
+        return(sorted_edges)
                 
     def get_face_between_edges(self, edge_1, edge_2):
         (adj, shared) = self.check_adjacent_edges(edge_1, edge_2)
         if adj:
             return(shared)
             
-    def get_faces_surrounding_vertex(self, index):
-        """
-        Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
-        Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
-        So we know that adjacent edges on the graph are adjacent in the list, with edges 1 to k then, 
-        Faces around the vertex are F_{i, i+1} until i = k, then we have the final face F_{i=k,0}
-        This gives me the faces in counter clockwise order
-        """
+    # def get_faces_surrounding_vertex(self):
+    #     """
+    #     Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
+    #     Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
+    #     So we know that adjacent edges on the graph are adjacent in the list, with edges 1 to k then, 
+    #     Faces around the vertex are F_{i, i+1} until i = k, then we have the final face F_{i=k,0}
+    #     This gives me the faces in counter clockwise order
+    #     """
         
-        number_of_edges = len(self.surrounding_edges)
+    #     number_of_edges = len(self.surrounding_edges)
         
-        faces = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
+    #     faces = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
         
-        for i in range(number_of_edges-1):
-            faces.update({(i, i+1): self.get_face_between_edges(self.surrounding_edges[i].edges, self.surrounding_edges[i+1].edges )})
+    #     for i in range(number_of_edges-1):
+    #         faces.update({(i, i+1): self.get_face_between_edges(self.surrounding_edges[i].edge, self.surrounding_edges[i+1].edge )})
             
-        faces.update({(number_of_edges-1, 0): self.get_face_between_edges(self.surrounding_edges[-1].edges, self.surrounding_edges[0].edges )})
+    #     faces.update({(number_of_edges-1, 0): self.get_face_between_edges(self.surrounding_edges[-1].edge, self.surrounding_edges[0].edge )})
         
-        return faces
+    #     return faces
     
-    def get_angles_surrounding_vertex(self, index):
+    def get_angles_surrounding_vertex(self, vertex):
         """
         Gets the angles surrounding vertex where angle_ij is the angle between self.surrounding_edges[i] and self.surrounding_edges[j] if the two edges are adjacent
         Could do a running total type thing. 
@@ -266,18 +371,195 @@ class SmoothFoldPatternVertex(SmoothFoldGeometry):
         """
         number_of_edges = len(self.surrounding_edges)
         
-        angles = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
-        sum_of_angles = 0
+        if number_of_edges == 0:
+            return []
+        else:
         
-        for i in range(number_of_edges-1):
-            angle = self.surrounding_edges[i+1].angles - self.surrounding_edges[i].angles
-            angles.update({(i, i+1): angle})
-            sum_of_angles += angle
+            angles = []
+            sum_of_angles = 0
             
-        angles.update({(number_of_edges-1, 0): np.pi - sum_of_angles})
+            for i in range(number_of_edges-1):
+                angle = self.surrounding_edges[i+1].angle_from_vertex - self.surrounding_edges[i].angle_from_vertex
+                angles.append(angle)
+                sum_of_angles += angle
+                
+            angles.append(np.pi - sum_of_angles) #so angles[-1] is the angle between the last and first edge
+            
+            return angles ##this is alpha_jk for vertex ja nd edge k
+    
+    def compute_simple_closed_path(self):
+        """
+        ON HOLD
+        Return (j,k): [b_L, b_R] for the vertex j and each edge k around the vertex. 
+        For simplicity,we specifiy (allow for the alteration of) the distance this path is to the vertex 
+        (keeping the distance equal along each edge). The only constraint is that the path does not cover some other intersection.
+        So check that no other vertices exist in the closed path
+        This will be useful for computing the roatation matrices. 
+        """
         
-        return angles
+        gamma_closed_path = []
+        
+        for (i, edge_obj) in enumerate(self.surrounding_edges):
+
+            ##rotate anticlockwise for b_L
+            F = self.parent_crease.smooth_fold_representation(edge_obj)
+            b_L = F(-1, 1) #+ np.array(edge_obj.source_vertex)
+            b_R = F(1, 1) #+ np.array(edge_obj.source_vertex)
+            other_end = F(0, 1) #+ np.array(edge_obj.source_vertex)
+            
+            # b_L = np.matmul(np.matrix([
+            #             [np.cos(angle_displaced_from_center), -np.sin(angle_displaced_from_center)],
+            #             [np.sin(angle_displaced_from_center),  np.cos(angle_displaced_from_center)]
+            #         ]), edge_vector) + vertex ##since b_L is in the span of e_1, e_2 not just relative to vertex
+            
+            # ##rotate clockwise for b_R
+            # b_R = np.matmul(np.matrix([
+            #             [np.cos(-angle_displaced_from_center), -np.sin(-angle_displaced_from_center)],
+            #             [np.sin(-angle_displaced_from_center),  np.cos(-angle_displaced_from_center)]
+            #         ]), edge_vector) + vertex
+            
+            print('bL', np.array(b_L), 'bR', np.array(b_R), 'middle', other_end, edge_obj.source_vertex)
+            
+            ##calculate the normal to the edge_vector at the point 10% away from the vertex. 
+            ##and take the point that is w/2 away in one direcion and w/2 away in the other. 
+            
+            gamma_closed_path.append([b_L, b_R]) ##ordering will match edge set
+            
+            #calculate distance from verte
+            
+        return gamma_closed_path
+            
+        
+    def check_R_constraint(self):
+        """
+        The product over all edges of vertex j of R_1(theta_jk) * R_3(alpha_jk) should be I_3
+        (24 in paper)
+        """
+        identity = np.matrix([1,0,0],
+                            [0,1,0],
+                            [0,0,1])
+        
+        
+        prod = identity
+        
+        for edge_obj in self.surrounding_edges:
+            theta_jk = edge_obj.curve_angle
+            alpha_jk = self.surrounding_angles[edge_obj.k]
+            prod = np.matmul(prod, np.matmul(R_1(theta_jk), R_3(alpha_jk)))
+            
+        return identity == prod
+    
+    def check_d_constraint(self):
+        zero_vec = np.array([[0],[0],[0]])
+        
+        identity = np.matrix([1,0,0],
+                            [0,1,0],
+                            [0,0,1])
+        
+        summ = zero_vec
+        
+        def g(k): ##test / rewrite
+            edge_obj = self.surrounding_edges[k]
+            if k == 0:
+                return np.array([0, 0, 0])
+            else:
+                return g(k-1) + ((edge_obj.flat_width - edge_obj.width) * np.cross(np.array([0,0,1]), (edge_obj.edge_vector / np.linalg.norm(edge_obj.edge_vector))))
+        
+        
+        
+        for edge_obj in self.surrounding_edges:
+            prod = identity
+            [b_L, b_R] = self.gamma_closed_path(self.vertex)[edge_obj.k]
+
+            w_vec = b_R - g(edge_obj.k) - b_L + g(edge_obj.k-1)
+            i_vec = self.gamma_closed_path(self.vertex)[0][0] - b_R if edge_obj.k == len(self.surrounding_edges) - 1 else self.gamma_closed_path(self.vertex)[edge_obj.k+1][0] - b_R
+            
+            rel_w_vec = np.matmul(np.linalg.inv(R_3(edge_obj.angle_from_vertex)), w_vec)
+            rel_i_vec = np.matmul(np.linalg.inv(R_3(edge_obj.angle_from_vertex)), i_vec) ## relative to the edge vector
+            
+            for l in range(edge_obj.k):
+                theta = self.surrounding_edges[l].edge_obj.theta
+                alpha = self.surrounding_angles[l]
+                prod = np.matmul(prod, np.matmul(R_1(theta), R_3(alpha)))
+                
+            summ += np.matmul(prod, np.matmul(R_1(self.surrounding_edges[edge_obj.k].edge_obj.theta * self.surrounding_angles[edge_obj.k]), rel_w_vec) + 
+                                    np.matmul(R_1(self.surrounding_edges[edge_obj.k].edge_obj.theta), rel_i_vec))
+            
+        return summ == zero_vec
+        
+
+            
+            
+        
+##Simplified such that the simple closed path corssing each edge surrounding a vertx only once without containing other edge intersctions
+##as defined in section 6, is here simplified to be the path which intersects with the edges precisely 0.01 away from the origin
+
+class SmoothFoldPatternEdge:
+    def __init__(self, j, k, edge_coords, edge_pointer, source_vertex, edge_vector, flat_w, curve_strength, fold_type, curve_angle, angle_from_vertex, faceA, faceB):
+        """
+        Set up smooth fold pattern as a set of smoothFoldPatternVertex
+        """
+        self.id = (j,k) #meaning edge k of vertex j
+        self.source_vertex = source_vertex
+        self.edge_coords = edge_coords
+        self.edge_pointer = edge_pointer
+        self.edge_vector = edge_vector #m_jk
+        self.curve_strength = curve_strength
+        self.flat_width = flat_w ##initalised width across edge when flat but this can change as adjacent faces move 
+        self.width = self.width_after_curve(curve_angle) #wjk at any time other than 0
+        self.fold_type = fold_type
+        self.curve_angle = curve_angle
+        self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
+        [self.faceL, self.faceR] = [faceA, faceB]
+        
+        
+    def width_after_curve(self, theta):
+        curve_segment_1 = (1 - self.curve_strength) * self.flat_width
+        curve_segment_2 = self.curve_strength * self.flat_width
+
+        return float(np.sqrt((curve_segment_1**2 * curve_segment_2**2 - (2*curve_segment_1*curve_segment_2) / np.cos(np.pi - theta))))
+        
+    def set_curve_angle(self, angle):
+        self.curve_angle = angle
+        self.update_width(angle)
+        
+    def update_edge(self, angle):
+        self.set_curve_angle(angle)
+        ##update the rest
+        #moev the edge and edeg vector accordingly 
+        ##constraints and validty checks will be done before calling this function
+        
+        
+        
+    
+        
     
     
+        # def fold_edge(self, num): #so num is k
+#     """
+#        This implements L^{jk} for current vertex j and edge numbered k. num == k
+#     """
     
-##added index to each vertex but don't think incrementing all the counts, by the vertex num would be necessary.??
+#     edge_vector, edge, phi_jk, edge_type = self.surrounding_edges[num].edge_vector, self.surrounding_edges[num].edge, self.surrounding_edges[num].angle, self.surrounding_edges[num].type
+#     edge_obj = self.surrounding_edges[num].edge_obj
+#     [faceA, faceB] = self.get_faces_surrounding_edge(edge_obj.edge)
+#     theta_jk = self.calculate_fold_angles(faceA, faceB, self.edges_assignments[self.edges.index(edge)]) ##might have to be pi - this value
+#     alpha_jk = self.surrounding_angles[num]
+    
+#     current_width = 0.5 #place holder this will mean the inal config is such that all faces are 0.5 away
+    
+#     [b_L, b_R] = self.gamma_closed_path(self.vertex)[num] ##this will be a point on the entry line 0.01 away from the vertex j
+    
+#     def g(k): ##test / rewrite
+#         if k == 0:
+#             return np.array([0, 0, 0])
+#         else:
+#             return g(k-1) + ((edge_obj.flat_width - edge_obj.width) * np.cross(np.array([0,0,1]), (edge_vector / np.linalg.norm(edge_vector))))
+
+    
+#     L = np.cross(T(b_L - g(num-1)) * Q_3(phi_jk) * Q_1(alpha_jk * theta_jk),
+#                  np.linalg.inv(Q_3(phi_jk)) * np.linalg.inv(T(b_L - g(num-1))), 
+#                  T(b_R - g(num)) * Q_3(phi_jk) * Q_1((1 - alpha_jk) * theta_jk),
+#                  np.linalg.inv(Q_3(phi_jk)) * np.linalg.inv(T(b_R - g(num)))
+#                 )
+    

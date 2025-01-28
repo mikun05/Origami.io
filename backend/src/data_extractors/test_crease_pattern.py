@@ -1,5 +1,5 @@
 import unittest
-from .crease_pattern import CreasePattern 
+from crease_pattern import CreasePattern 
 
 class TestCreasePattern(unittest.TestCase):
     def setUp(self):
