@@ -268,6 +268,7 @@ class SmoothFoldPatternVertex:
         """
 
         self.parent_crease = parent_crease
+        self.original_crease = parent_crease
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
         # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
@@ -314,7 +315,7 @@ class SmoothFoldPatternVertex:
             angle_from_vertex = np.arctan2(e_y, e_x)
             
             
-            edge_obj = SmoothFoldPatternEdge(index, k, edge, edge_pointer, vertex, edge_vector, 
+            edge_obj = SmoothFoldPatternEdge(self, index, k, edge, edge_pointer, vertex, edge_vector, 
                                              self.parent_crease.fold_width, 
                                              self.parent_crease.curve_strength, 
                                              self.parent_crease.edges_assignments[i], 
@@ -495,14 +496,15 @@ class SmoothFoldPatternVertex:
 ##as defined in section 6, is here simplified to be the path which intersects with the edges precisely 0.01 away from the origin
 
 class SmoothFoldPatternEdge:
-    def __init__(self, j, k, edge_coords, edge_pointer, source_vertex, edge_vector, flat_w, curve_strength, fold_type, curve_angle, angle_from_vertex, faceA, faceB):
+    def __init__(self, parent_vertex, j, k, edge_coords, edge_pointer, source_vertex, edge_vector, flat_w, curve_strength, fold_type, curve_angle, angle_from_vertex, faceA, faceB):
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
+        self.parent_vertex = parent_vertex
         self.id = (j,k) #meaning edge k of vertex j
         self.source_vertex = source_vertex
         self.edge_coords = edge_coords
-        self.edge_pointer = edge_pointer
+        self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
         self.edge_vector = edge_vector #m_jk
         self.curve_strength = curve_strength
         self.flat_width = flat_w ##initalised width across edge when flat but this can change as adjacent faces move 
