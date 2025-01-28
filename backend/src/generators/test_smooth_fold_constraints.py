@@ -2,6 +2,7 @@ import unittest
 import numpy as np
 from .smooth_fold_gens import SmoothFoldPattern
 from ..data_extractors.crease_pattern import CreasePattern
+from .edge_fold import *
 
 class TestSmoothFoldPattern(unittest.TestCase):
     def setUp(self):
@@ -89,6 +90,15 @@ class TestSmoothFoldPattern(unittest.TestCase):
         expected_vertex_objs = []
         result_vertex_objs = self.water.vertex_objects[6].enclosing_path
         self.assertNotEqual(result_vertex_objs, expected_vertex_objs)
+        
+    def test_folding(self):
+        """
+        Test the folding of the first edge counter clockwise of the 6th vertex of the waterbomb pattern
+        The 6th vertex of this pattern is the only none boundary vertex
+        """
+        expected_vertices = []
+        result_vertices = bend_edge(self.water.vertex_objects[6].surrounding_edges[0], 0).vertices
+        self.assertEqual(expected_vertices, result_vertices)
         
     # def test_vertex_edge_information(self):
     #     vob = self.water.vertex_objects[6].surrounding_edges[0]

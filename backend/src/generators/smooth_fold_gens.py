@@ -188,8 +188,8 @@ class SmoothFoldGeometry(CreasePattern):
         
         actual_direction_vector = edge_vector / np.linalg.norm(edge_vector)
 
-        print('edge', edge_vector)
-        print('direction vector', actual_direction_vector)
+        # print('edge', edge_vector)
+        # print('direction vector', actual_direction_vector)
         return actual_direction_vector 
     
 
@@ -200,7 +200,7 @@ class SmoothFoldGeometry(CreasePattern):
         This function returns a given edge as a smooth fold
         """
         
-        print('check:', self.define_normalised_parametric_curve(edge_obj))
+        # print('check:', self.define_normalised_parametric_curve(edge_obj))
         
         c = self.define_normalised_parametric_curve(edge_obj)
         
@@ -419,7 +419,7 @@ class SmoothFoldPatternVertex:
             #             [np.sin(-angle_displaced_from_center),  np.cos(-angle_displaced_from_center)]
             #         ]), edge_vector) + vertex
             
-            print('bL', np.array(b_L), 'bR', np.array(b_R), 'middle', other_end, edge_obj.source_vertex)
+            # print('bL', np.array(b_L), 'bR', np.array(b_R), 'middle', other_end, edge_obj.source_vertex)
             
             ##calculate the normal to the edge_vector at the point 10% away from the vertex. 
             ##and take the point that is w/2 away in one direcion and w/2 away in the other. 
