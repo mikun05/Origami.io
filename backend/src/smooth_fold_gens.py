@@ -193,52 +193,52 @@ class SmoothFoldGeometry(CreasePattern):
         return actual_direction_vector 
     
 
-    def smooth_fold_representation(self, edge_obj):
-        """
-        ON HOLD
-        Smooth folds are ruled surfaces (Def 3).
-        This function returns a given edge as a smooth fold
-        """
+    # def smooth_fold_representation(self, edge_obj):
+    #     """
+    #     ON HOLD
+    #     Smooth folds are ruled surfaces (Def 3).
+    #     This function returns a given edge as a smooth fold
+    #     """
         
-        # print('check:', self.define_normalised_parametric_curve(edge_obj))
+    #     # print('check:', self.define_normalised_parametric_curve(edge_obj))
         
-        c = self.define_normalised_parametric_curve(edge_obj)
+    #     c = self.define_normalised_parametric_curve(edge_obj)
         
-        #parametric_curve = edge_obj.width * c()
-        e1 = self.compute_direction_vector(edge_obj.width, edge_obj.edge_pointer, edge_obj.edge_vector)
-        e1_unit = e1 / np.linalg.norm(e1)
-        e2 = np.cross(np.array([0,0,1]), e1)
-        e2_unit = e2 / np.linalg.norm(e2)
+    #     #parametric_curve = edge_obj.width * c()
+    #     e1 = self.compute_direction_vector(edge_obj.width, edge_obj.edge_pointer, edge_obj.edge_vector)
+    #     e1_unit = e1 / np.linalg.norm(e1)
+    #     e2 = np.cross(np.array([0,0,1]), e1)
+    #     e2_unit = e2 / np.linalg.norm(e2)
         
-        local_x = np.array([1, 0, 0])
+    #     local_x = np.array([1, 0, 0])
 
-        # Compute the rotation axis and angle
-        axis = np.cross(local_x, e2_unit)
-        axis_norm = np.linalg.norm(axis)
+    #     # Compute the rotation axis and angle
+    #     axis = np.cross(local_x, e2_unit)
+    #     axis_norm = np.linalg.norm(axis)
     
-        axis = axis / axis_norm
-        angle = np.arccos(np.dot(local_x, e2_unit))
+    #     axis_unit = axis / axis_norm
+    #     angle = np.arccos(np.dot(local_x, e2_unit))
        
         
-        def rotation_matrix(axis, angle):
-            cos_theta = np.cos(angle)
-            sin_theta = np.sin(angle)
-            one_minus_cos = 1 - cos_theta
+    #     def rotation_matrix(axis, angle):
+    #         cos_theta = np.cos(angle)
+    #         sin_theta = np.sin(angle)
+    #         one_minus_cos = 1 - cos_theta
 
-            x, y, z = axis
-            return np.array([
-                [cos_theta + x * x * one_minus_cos, x * y * one_minus_cos - z * sin_theta, x * z * one_minus_cos + y * sin_theta],
-                [y * x * one_minus_cos + z * sin_theta, cos_theta + y * y * one_minus_cos, y * z * one_minus_cos - x * sin_theta],
-                [z * x * one_minus_cos - y * sin_theta, z * y * one_minus_cos + x * sin_theta, cos_theta + z * z * one_minus_cos]
-            ])
+    #         x, y, z = axis
+    #         return np.array([
+    #             [cos_theta + x * x * one_minus_cos, x * y * one_minus_cos - z * sin_theta, x * z * one_minus_cos + y * sin_theta],
+    #             [y * x * one_minus_cos + z * sin_theta, cos_theta + y * y * one_minus_cos, y * z * one_minus_cos - x * sin_theta],
+    #             [z * x * one_minus_cos - y * sin_theta, z * y * one_minus_cos + x * sin_theta, cos_theta + z * z * one_minus_cos]
+    #         ])
         
-        R = rotation_matrix(axis, angle)
+    #     R = rotation_matrix(axis_unit, angle)
         
-        def F(l_1, l_2):
-            c_global = np.dot(c(l_1), R.T) # edge_obj.source_vertex
-            return (c(l_1)) #keep + (l_2 * np.array(e2_unit))
+    #     def F(l_1, l_2):
+    #         c_global = np.dot(c(l_1), R.T) # edge_obj.source_vertex
+    #         return (c(l_1)) #keep + (l_2 * np.array(e2_unit))
         
-        return F
+    #     return F
         
         
 class SmoothFoldPattern():
@@ -259,7 +259,7 @@ class SmoothFoldPattern():
     
     def to_dict(self):
         return {
-            "vertex_objects": self.vertex_objects
+            "vertex_objects": [vertex_obj.to_dict() for vertex_obj in self.vertex_objects]
         }
                 
         ##later number the vertices and push this number down to the functions of that vertex. So if on vertec n, prepend n to all values i.e., angle_jk, edge_mk
@@ -277,15 +277,15 @@ class SmoothFoldPatternVertex:
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
         # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
         self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
-        self.enclosing_path = self.compute_simple_closed_path()
+        #self.enclosing_path = self.compute_simple_closed_path()
         
     def to_dict(self):
         return {
             "index": self.index,
             "vertex": self.vertex,
             "flat_vertex": self.original_vertex,
-            "surrounding_edges": self.surrounding_edges,
-            "surrounding_angles": self.surrounding_angles
+            "surrounding_edges": [edge_obj.to_dict() for edge_obj in self.surrounding_edges],
+            "surrounding_angles": [float(angle) for angle in self.surrounding_angles]
         }
         
     def order_edges_counterclockwise(self, vertex, index):
@@ -398,47 +398,47 @@ class SmoothFoldPatternVertex:
             
             return angles ##this is alpha_jk for vertex ja nd edge k
     
-    def compute_simple_closed_path(self):
-        """
-        ON HOLD
-        Return (j,k): [b_L, b_R] for the vertex j and each edge k around the vertex. 
-        For simplicity,we specifiy (allow for the alteration of) the distance this path is to the vertex 
-        (keeping the distance equal along each edge). The only constraint is that the path does not cover some other intersection.
-        So check that no other vertices exist in the closed path
-        This will be useful for computing the roatation matrices. 
-        """
+    # def compute_simple_closed_path(self):
+    #     """
+    #     ON HOLD
+    #     Return (j,k): [b_L, b_R] for the vertex j and each edge k around the vertex. 
+    #     For simplicity,we specifiy (allow for the alteration of) the distance this path is to the vertex 
+    #     (keeping the distance equal along each edge). The only constraint is that the path does not cover some other intersection.
+    #     So check that no other vertices exist in the closed path
+    #     This will be useful for computing the roatation matrices. 
+    #     """
         
-        gamma_closed_path = []
+    #     gamma_closed_path = []
         
-        for (i, edge_obj) in enumerate(self.surrounding_edges):
+    #     for (i, edge_obj) in enumerate(self.surrounding_edges):
 
-            ##rotate anticlockwise for b_L
-            F = self.parent_crease.smooth_fold_representation(edge_obj)
-            b_L = F(-1, 1) #+ np.array(edge_obj.source_vertex)
-            b_R = F(1, 1) #+ np.array(edge_obj.source_vertex)
-            other_end = F(0, 1) #+ np.array(edge_obj.source_vertex)
+    #         ##rotate anticlockwise for b_L
+    #         F = self.parent_crease.smooth_fold_representation(edge_obj)
+    #         b_L = F(-1, 1) #+ np.array(edge_obj.source_vertex)
+    #         b_R = F(1, 1) #+ np.array(edge_obj.source_vertex)
+    #         other_end = F(0, 1) #+ np.array(edge_obj.source_vertex)
             
-            # b_L = np.matmul(np.matrix([
-            #             [np.cos(angle_displaced_from_center), -np.sin(angle_displaced_from_center)],
-            #             [np.sin(angle_displaced_from_center),  np.cos(angle_displaced_from_center)]
-            #         ]), edge_vector) + vertex ##since b_L is in the span of e_1, e_2 not just relative to vertex
+    #         # b_L = np.matmul(np.matrix([
+    #         #             [np.cos(angle_displaced_from_center), -np.sin(angle_displaced_from_center)],
+    #         #             [np.sin(angle_displaced_from_center),  np.cos(angle_displaced_from_center)]
+    #         #         ]), edge_vector) + vertex ##since b_L is in the span of e_1, e_2 not just relative to vertex
             
-            # ##rotate clockwise for b_R
-            # b_R = np.matmul(np.matrix([
-            #             [np.cos(-angle_displaced_from_center), -np.sin(-angle_displaced_from_center)],
-            #             [np.sin(-angle_displaced_from_center),  np.cos(-angle_displaced_from_center)]
-            #         ]), edge_vector) + vertex
+    #         # ##rotate clockwise for b_R
+    #         # b_R = np.matmul(np.matrix([
+    #         #             [np.cos(-angle_displaced_from_center), -np.sin(-angle_displaced_from_center)],
+    #         #             [np.sin(-angle_displaced_from_center),  np.cos(-angle_displaced_from_center)]
+    #         #         ]), edge_vector) + vertex
             
-            # print('bL', np.array(b_L), 'bR', np.array(b_R), 'middle', other_end, edge_obj.source_vertex)
+    #         # print('bL', np.array(b_L), 'bR', np.array(b_R), 'middle', other_end, edge_obj.source_vertex)
             
-            ##calculate the normal to the edge_vector at the point 10% away from the vertex. 
-            ##and take the point that is w/2 away in one direcion and w/2 away in the other. 
+    #         ##calculate the normal to the edge_vector at the point 10% away from the vertex. 
+    #         ##and take the point that is w/2 away in one direcion and w/2 away in the other. 
             
-            gamma_closed_path.append([b_L, b_R]) ##ordering will match edge set
+    #         gamma_closed_path.append([b_L, b_R]) ##ordering will match edge set
             
-            #calculate distance from verte
+    #         #calculate distance from verte
             
-        return gamma_closed_path
+    #     return gamma_closed_path
             
         
     def check_R_constraint(self):
@@ -529,12 +529,12 @@ class SmoothFoldPatternEdge:
     def to_dict(self):
         return {
             "index": self.id,
-            "edge_vector": self.edge_vector,
+            "edge_vector": self.edge_vector.tolist(),
             "edge_pointer": self.edge_pointer,
             "source_vertex": self.source_vertex,
-            "end_vertex": self.edge_coords.remove(self.source_vertex)[0],
+            "edge_coords": self.edge_coords,
             "symmetry": self.curve_strength,
-            "angle": self.curve_angle,
+            "angle": float(self.curve_angle),
             "faceL": self.faceL,
             "faceR": self.faceR,
             "fold_type": self.fold_type

@@ -1,5 +1,5 @@
 import './App.css'
-import CreaseLoader from './components/CreaseLoader'
+import PatternLoader from './components/PatternLoader'
 
 
 
@@ -10,7 +10,7 @@ function App() {
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap:'1rem'}}>
 
-    <CreaseLoader />
+    <PatternLoader />
     </div>
   )
 }

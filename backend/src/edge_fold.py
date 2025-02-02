@@ -178,7 +178,7 @@ def turn_face(face, visited_vertices, current_crease):
             
             new_vertex = np.array(current_crease.new_vertices[visited_face_vertex]) + original_vector_from_vistied
             
-            current_crease.new_vertices[vertex] = new_vertex
+            current_crease.new_vertices[vertex] = new_vertex.tolist()
     
                                         
 
@@ -288,7 +288,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
             else:
                 new_vector = alt_rotate_local_xy_to_xz(vertex_vector, er1_unit, e2_unit, er3_unit, right_angle)
                 
-            new_vertex = edge_obj.source_vertex + new_vector
+            new_vertex = (edge_obj.source_vertex + new_vector).tolist()
             
             current_crease.new_vertices[vertex] = new_vertex #updates the crease pattern            
 
