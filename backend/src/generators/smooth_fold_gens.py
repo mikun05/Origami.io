@@ -255,8 +255,12 @@ class SmoothFoldPattern():
             vertex_obj = SmoothFoldPatternVertex(self.geom, vertex, j)
             smooth_fold_vertex.append(vertex_obj)
             
-        
         return smooth_fold_vertex
+    
+    def to_dict(self):
+        return {
+            "vertex_objects": self.vertex_objects
+        }
                 
         ##later number the vertices and push this number down to the functions of that vertex. So if on vertec n, prepend n to all values i.e., angle_jk, edge_mk
     
@@ -266,7 +270,7 @@ class SmoothFoldPatternVertex:
         """
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
-
+        self.index = index
         self.parent_crease = parent_crease
         self.original_vertex = vertex
         self.vertex = vertex
@@ -274,6 +278,15 @@ class SmoothFoldPatternVertex:
         # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
         self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
         self.enclosing_path = self.compute_simple_closed_path()
+        
+    def to_dict(self):
+        return {
+            "index": self.index,
+            "vertex": self.vertex,
+            "flat_vertex": self.original_vertex,
+            "surrounding_edges": self.surrounding_edges,
+            "surrounding_angles": self.surrounding_angles
+        }
         
     def order_edges_counterclockwise(self, vertex, index):
         """
@@ -486,8 +499,6 @@ class SmoothFoldPatternVertex:
         return summ == zero_vec
         
 
-            
-            
         
 ##Simplified such that the simple closed path corssing each edge surrounding a vertx only once without containing other edge intersctions
 ##as defined in section 6, is here simplified to be the path which intersects with the edges precisely 0.01 away from the origin
@@ -514,6 +525,20 @@ class SmoothFoldPatternEdge:
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
         [self.faceL, self.faceR] = [faceA, faceB]
         
+        
+    def to_dict(self):
+        return {
+            "index": self.id,
+            "edge_vector": self.edge_vector,
+            "edge_pointer": self.edge_pointer,
+            "source_vertex": self.source_vertex,
+            "end_vertex": self.edge_coords.remove(self.source_vertex)[0],
+            "symmetry": self.curve_strength,
+            "angle": self.curve_angle,
+            "faceL": self.faceL,
+            "faceR": self.faceR,
+            "fold_type": self.fold_type
+        }
         
     def width_after_curve(self, theta):
         curve_segment_1 = (1 - self.curve_strength) * self.flat_width
