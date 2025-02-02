@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from .smooth_fold_gens import SmoothFoldGeometry 
+from smooth_fold_gens import SmoothFoldGeometry 
 
 class TestSmoothFoldGeometry(unittest.TestCase):
     def setUp(self):

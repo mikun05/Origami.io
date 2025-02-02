@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..data_extractors.crease_pattern import CreasePattern
+from crease_pattern import CreasePattern
 #from src.data_extractors.crease_pattern import CreasePattern
 
 def R_1(theta):

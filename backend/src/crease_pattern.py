@@ -11,6 +11,7 @@ class CreasePattern:
         self.edges_assignments = fold_data.get('edges_assignment', [])
         #self.fold_angles = fold_data.get('edges_foldAngle', [])
         
+        
     def initialise_vertices(self, fold_data):
         # print('f', fold_data)
         return fold_data.get('vertices_coords', [])

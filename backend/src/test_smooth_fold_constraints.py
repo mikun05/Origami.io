@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
-from .smooth_fold_gens import SmoothFoldPattern
-from ..data_extractors.crease_pattern import CreasePattern
-from .edge_fold import *
+from smooth_fold_gens import SmoothFoldPattern
+from crease_pattern import CreasePattern
+from edge_fold import *
 
 class TestSmoothFoldPattern(unittest.TestCase):
     def setUp(self):

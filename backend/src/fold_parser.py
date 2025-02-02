@@ -2,8 +2,8 @@ from flask import Blueprint, Flask, jsonify, request
 from flask_cors import CORS
 import json
 
-from generators.smooth_fold_gens import *
-from generators.edge_fold import *
+from smooth_fold_gens import *
+from edge_fold import *
 
 app = Flask(__name__)
 CORS(app)
@@ -36,7 +36,7 @@ def get_fold_pattern():
 
 
 @app.route('/get-vertex-info', methods=['GET'])
-def get_vertex_info(vertex):
+def get_vertex_info():
     """API route to get the current vertex info of the current fold pattern using vertex index."""
     data = request.json
     vertex_index = data.get("vertexIndex")
@@ -46,7 +46,7 @@ def get_vertex_info(vertex):
 
 
 @app.route('/get-edge-info', methods=['GET'])
-def get_vertex_info():
+def get_edge_info():
     """API route to get the current vertex info of the current fold pattern using vertex index and edge index."""
     data = request.json
     vertex_index = data.get("vertexIndex")

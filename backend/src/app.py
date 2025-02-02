@@ -1,12 +1,12 @@
 from flask import Flask, redirect, render_template, request, jsonify, url_for
 from flask_cors import CORS, cross_origin
-from uploaders.dxf_upload import dxf_upload_bp
+from fold_parser import app
 import os
 
 app = Flask(__name__)
 CORS(app)
 
-app.register_blueprint(dxf_upload_bp)
+#app.register_blueprint(dxf_upload_bp)
 
 @app.route('/')
 @cross_origin()
