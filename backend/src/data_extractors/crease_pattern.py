@@ -4,12 +4,17 @@ class CreasePattern:
         """
         Initialize the crease pattern with the FOLD format data.
         """
-        self.vertices = fold_data.get('vertices_coords', [])
+        self.flat_vertices = self.initialise_vertices(fold_data)
+        self.new_vertices = self.initialise_vertices(fold_data).copy()
         self.edges = fold_data.get('edges_vertices', [])
         self.faces = fold_data.get('faces_vertices', [])
         self.edges_assignments = fold_data.get('edges_assignment', [])
         #self.fold_angles = fold_data.get('edges_foldAngle', [])
         
+    def initialise_vertices(self, fold_data):
+        # print('f', fold_data)
+        return fold_data.get('vertices_coords', [])
+    
     def is_equal(self, arr1, arr2):
         return np.all(np.sort(np.array(arr1)) == np.sort(np.array(arr2)))
     
@@ -42,7 +47,7 @@ class CreasePattern:
         """
         Find the edges around a vertex
         """
-        pos = self.vertices.index(vertex)
+        pos = self.new_vertices.index(vertex)
         adj_edges = []
         
         if (pos == -1):
@@ -84,9 +89,9 @@ class CreasePattern:
         if (list_rep == []):
             return actual
         elif (isinstance(list_rep[0], list)):
-            actual = [[self.vertices[ind] for ind in ls] for ls in list_rep]
+            actual = [[self.new_vertices[ind] for ind in ls] for ls in list_rep]
         else:
-            actual = [self.vertices[ind] for ind in list_rep]
+            actual = [self.new_vertices[ind] for ind in list_rep]
         
         return actual
     

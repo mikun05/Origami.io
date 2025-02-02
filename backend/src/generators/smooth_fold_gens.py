@@ -247,7 +247,7 @@ class SmoothFoldPattern():
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
         self.geom = SmoothFoldGeometry(fold_data)
-        self.vertex_objects = self.format_vertices(self.geom.vertices) #[SmoothFoldPatternVertex(vertex) for vertex in vertices]
+        self.vertex_objects = self.format_vertices(self.geom.new_vertices) #[SmoothFoldPatternVertex(vertex) for vertex in vertices]
         
     def format_vertices(self, vertices):
         smooth_fold_vertex = []
@@ -268,7 +268,7 @@ class SmoothFoldPatternVertex:
         """
 
         self.parent_crease = parent_crease
-        self.original_crease = parent_crease
+        self.original_vertex = vertex
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
         # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
@@ -284,6 +284,7 @@ class SmoothFoldPatternVertex:
         ##Note, would also neeed to keep track if which folds are mountain and valley and reoarder edge assignment accordingly. 
         ##New structure, {edge: coords, type: M/B/V}
         edge_pointers = self.parent_crease.get_edges_surrounding_vertex(vertex) #each edge in the from (u,v)
+        # print(edge_pointers)
         unordered_edge = []
         
         
@@ -293,39 +294,35 @@ class SmoothFoldPatternVertex:
             i = self.parent_crease.edges.index(edge_pointer) ##to get correct edge assignment
 
 
-            if self.parent_crease.edges_assignments[i] == 'B': ##excludes boundary edges and vertices
-                return []
+            if self.parent_crease.edges_assignments[i] != 'B': ##excludes boundary edges and vertices
             
-            
-            # try:
-            #     [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
-            # except:
-            #     return [] # boundary vertex
-          
+                # print(edge_pointer, 'not boundary')
 
-            [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
+            
 
-            theta_jk = self.parent_crease.calculate_fold_angles(faceA, faceB, self.parent_crease.edges_assignments[i]) ##might have to be pi - this value
-            ##if input is a flat crease pattern, theta is ALWAYS 0
-            edge = self.parent_crease.convert_to_actual_coords(edge_pointer)
-            
-            edge_vector = np.array(edge[1]) - np.array(edge[0]) #edge vector = v - u
-            [e_x, e_y, e_z] = np.array(edge_vector) - np.array(vertex)
-            
-            angle_from_vertex = np.arctan2(e_y, e_x)
-            
-            
-            edge_obj = SmoothFoldPatternEdge(self, index, k, edge, edge_pointer, vertex, edge_vector, 
-                                             self.parent_crease.fold_width, 
-                                             self.parent_crease.curve_strength, 
-                                             self.parent_crease.edges_assignments[i], 
-                                             theta_jk, angle_from_vertex, faceA, faceB)
-            ##Things that will be subject to change when bending are fold_width, curve strength, theta angle .. by intervention
-            ##edge_vector and edge will also change as a consquence of the above
-            
-            unordered_edge.append({'edge_obj': edge_obj,
-                                   'angle': angle_from_vertex ##this is phi(mjk). It is the cummulative angle
-                                   })
+                [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
+
+                theta_jk = self.parent_crease.calculate_fold_angles(faceA, faceB, self.parent_crease.edges_assignments[i]) ##might have to be pi - this value
+                ##if input is a flat crease pattern, theta is ALWAYS 0
+                edge = self.parent_crease.convert_to_actual_coords(edge_pointer)
+                
+                edge_vector = np.array(edge[1]) - np.array(edge[0]) #edge vector = v - u
+                [e_x, e_y, e_z] = np.array(edge_vector) - np.array(vertex)
+                
+                angle_from_vertex = np.arctan2(e_y, e_x)
+                
+                
+                edge_obj = SmoothFoldPatternEdge(self, index, k, edge, edge_pointer, vertex, edge_vector, 
+                                                self.parent_crease.fold_width, 
+                                                self.parent_crease.curve_strength, 
+                                                self.parent_crease.edges_assignments[i], 
+                                                theta_jk, angle_from_vertex, faceA, faceB)
+                ##Things that will be subject to change when bending are fold_width, curve strength, theta angle .. by intervention
+                ##edge_vector and edge will also change as a consquence of the above
+                
+                unordered_edge.append({'edge_obj': edge_obj,
+                                    'angle': angle_from_vertex ##this is phi(mjk). It is the cummulative angle
+                                    })
             
         def sort_according_to_angle(edge):
             #print(edge['angle'])
@@ -502,8 +499,11 @@ class SmoothFoldPatternEdge:
         """
         self.parent_vertex = parent_vertex
         self.id = (j,k) #meaning edge k of vertex j
+        self.original_source_vertex = source_vertex
         self.source_vertex = source_vertex
         self.edge_coords = edge_coords
+        self.original_edge_coords = edge_coords
+
         self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
         self.edge_vector = edge_vector #m_jk
         self.curve_strength = curve_strength
@@ -525,8 +525,10 @@ class SmoothFoldPatternEdge:
         self.curve_angle = angle
         self.update_width(angle)
         
-    def update_edge(self, angle):
+    def update_edge(self):
+        angle = self.parent_vertex.parent_crease.calculate_fold_angles(self, self.faceL, self.faceR, self.foldType)
         self.set_curve_angle(angle)
+
         ##update the rest
         #moev the edge and edeg vector accordingly 
         ##constraints and validty checks will be done before calling this function

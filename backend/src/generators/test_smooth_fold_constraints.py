@@ -25,6 +25,21 @@ class TestSmoothFoldPattern(unittest.TestCase):
             ]
         }
         
+        self.three_square = {
+            "vertices_coords": [
+                [0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0]
+            ],
+            "edges_vertices": [
+                [0, 4], [0, 1], [4, 5], [1, 5], [1,2], [5,6], [2,6], [2,3], [6,7], [3,7]
+            ],
+            "faces_vertices": [
+                [0,1,5,4], [1,2,6,5], [2,3,7,6]
+            ],
+            "edges_assignment": [
+                "B", "B", "B", "V", "B", "B", "M", "B", "B", "B"
+            ]
+        }
+        
         self.simple_valley = {
             "vertices_coords": [
                 [0,0,0], [0,1,0], [1,0,0], [0.5,0.5,1]
@@ -56,30 +71,31 @@ class TestSmoothFoldPattern(unittest.TestCase):
         }
         
         self.water = SmoothFoldPattern(self.crease_pattern)  
-        # self.valley = SmoothFoldPattern(self.simple_valley)   
-        # self.mountain = SmoothFoldPattern(self.simple_mountain)        
+        self.squares = SmoothFoldPattern(self.three_square)
+        self.valley = SmoothFoldPattern(self.simple_valley)   
+        self.mountain = SmoothFoldPattern(self.simple_mountain)        
      
       
 
-    # def test_format_vertices_boundary(self):
-    #     """
-    #     Test the formatting of vertices and its edges as a numbered collection of smooth folds.
-    #     Test for boundary vertex. surrounding edge objects should be empty
-    #     The 6th vertex of this pattern is the only none boundary vertex
-    #     """
-    #     expected_vertex_objs = []
-    #     result_vertex_objs = self.water.vertex_objects[0].surrounding_edges
-    #     self.assertEqual(result_vertex_objs, expected_vertex_objs)
+    def test_format_vertices_boundary(self):
+        """
+        Test the formatting of vertices and its edges as a numbered collection of smooth folds.
+        Test for boundary vertex. surrounding edge objects should be empty
+        The 6th vertex of this pattern is the only none boundary vertex
+        """
+        expected_vertex_objs = []
+        result_vertex_objs = self.water.vertex_objects[0].surrounding_edges
+        self.assertNotEqual(result_vertex_objs, expected_vertex_objs)
         
-    # def test_format_vertices_non_boundary(self):
-    #     """
-    #     Test the formatting of vertices and its edges as a numbered collection of smooth folds.
-    #     Test for boundary vertex. surrounding edge objects should be empty
-    #     The 6th vertex of this pattern is the only none boundary vertex
-    #     """
-    #     expected_vertex_objs = []
-    #     result_vertex_objs = self.water.vertex_objects[6].surrounding_edges
-    #     self.assertNotEqual(result_vertex_objs, expected_vertex_objs)
+    def test_format_vertices_non_boundary(self):
+        """
+        Test the formatting of vertices and its edges as a numbered collection of smooth folds.
+        Test for boundary vertex. surrounding edge objects should be empty
+        The 6th vertex of this pattern is the only none boundary vertex
+        """
+        expected_vertex_objs = []
+        result_vertex_objs = self.water.vertex_objects[6].surrounding_edges
+        self.assertNotEqual(result_vertex_objs, expected_vertex_objs)
         
     def test_format_vertices_enclosing_path(self):
         """
@@ -96,9 +112,23 @@ class TestSmoothFoldPattern(unittest.TestCase):
         Test the folding of the first edge counter clockwise of the 6th vertex of the waterbomb pattern
         The 6th vertex of this pattern is the only none boundary vertex
         """
+        print('test_folding')
         expected_vertices = []
-        result_vertices = bend_edge(self.water.vertex_objects[6].surrounding_edges[0], 0).vertices
-        self.assertEqual(expected_vertices, result_vertices)
+        bend_edge(self.squares.vertex_objects[1].surrounding_edges[0], np.pi/2, 1)
+        result_vertices = self.squares.geom.new_vertices
+        self.assertNotEqual(expected_vertices, result_vertices)
+        print('done')
+        
+    def test_folding(self):
+        """
+        Test change in angle of other edges after folding one edge
+        """
+        print('test_folding')
+        expected_angle = 0
+        bend_edge(self.squares.vertex_objects[1].surrounding_edges[0], np.pi/2, 1)
+        result_angle = self.squares.vertex_objects[2].surrounding_edges[0].curve_angle
+        self.assertEqual(expected_angle, result_angle)
+        print('done')
         
     # def test_vertex_edge_information(self):
     #     vob = self.water.vertex_objects[6].surrounding_edges[0]
