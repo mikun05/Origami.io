@@ -259,6 +259,11 @@ class SmoothFoldPattern():
     
     def to_dict(self):
         return {
+            "fold_format": [{
+                "vertices": self.geom.new_vertices,
+                "edges": self.geom.edges,
+                "faces": self.geom.faces,   
+            }],
             "vertex_objects": [vertex_obj.to_dict() for vertex_obj in self.vertex_objects]
         }
                 

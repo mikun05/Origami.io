@@ -1,6 +1,5 @@
 from flask import Flask, redirect, render_template, request, jsonify, url_for
 from flask_cors import CORS, cross_origin
-from fold_parser import app
 import os
 
 
@@ -29,12 +28,13 @@ example_fold_data = { #this is the 3 squares one
 
 
 pattern = SmoothFoldPattern(example_fold_data)
-print(pattern.to_dict()['vertex_objects'])
 
 @app.route('/get-fold-pattern', methods=['GET'])
 def get_fold_pattern():
     """API route to get the current fold pattern."""
-    return jsonify(pattern.to_dict())
+    pattern_dict = pattern.to_dict()
+    print('p', pattern_dict['fold_format'][0]['vertices'])
+    return jsonify(pattern_dict)
 
 
 @app.route('/get-vertex-info', methods=['GET'])

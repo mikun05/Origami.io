@@ -276,9 +276,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
     faceL = [] if sym == 1 else edge_obj.faceL
     
     for vertex in faceR + faceL:
-        print('huh')
         v = np.array(current_crease.new_vertices[vertex])
-        print('vv',v)
         if vertex not in edge_obj.edge_pointer:#not #in any(x != v for x in edge_obj.edge_coords):
             vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex)
      

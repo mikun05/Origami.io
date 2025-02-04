@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import PatternViewer from "./PatternViewer";
 
 const PatternLoader = () => {
     const [foldPattern, setFoldPattern] = useState(null);
@@ -50,6 +51,8 @@ const PatternLoader = () => {
             <h2>Fold Pattern Viewer</h2>
             {foldPattern ? (
                 <div>
+                    <PatternViewer pattern={foldPattern['fold_format'][0]} />
+
                     <pre>{JSON.stringify(foldPattern, null, 2)}</pre>
                     
                 </div>

@@ -12,7 +12,7 @@ CORS(app)
 
 example_fold_data = { #this is the 3 squares one
             "vertices_coords": [
-                [0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0]
+                [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0]
             ],
             "edges_vertices": [
                 [0, 4], [0, 1], [4, 5], [1, 5], [1,2], [5,6], [2,6], [2,3], [6,7], [3,7]
@@ -33,7 +33,7 @@ pattern = SmoothFoldPattern(example_fold_data)
 def get_fold_pattern():
     """API route to get the current fold pattern."""
     pattern_dict = pattern.to_dict()
-    print(pattern_dict)
+    #print('p', pattern_dict.fold_format.vertices)
     return jsonify(pattern_dict)
 
 
