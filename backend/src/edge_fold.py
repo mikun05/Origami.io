@@ -263,7 +263,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
     
     
     scale = 1 if edge_obj.fold_type == "V" else -1
-    angle = angle_between_faces * scale
+    angle = angle_between_faces if edge_obj.fold_type == "V" else (np.pi * 2) - angle_between_faces
     
     [left_angle, right_angle] = compute_bend_angle(sym, angle)
     

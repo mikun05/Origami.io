@@ -1,6 +1,7 @@
 from flask import Flask, redirect, render_template, request, jsonify, url_for
 from flask_cors import CORS, cross_origin
-import os
+
+import numpy as np
 
 
 from smooth_fold_gens import *
@@ -11,9 +12,9 @@ CORS(app)
 
 # fold_bp = Blueprint('fold', __name__)
 
-example_fold_data = { #this is the 3 squares one
+three_square_fold_data = { #this is the 3 squares one
             "vertices_coords": [
-                [0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0]
+                [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0]
             ],
             "edges_vertices": [
                 [0, 4], [0, 1], [4, 5], [1, 5], [1,2], [5,6], [2,6], [2,3], [6,7], [3,7]
@@ -25,6 +26,23 @@ example_fold_data = { #this is the 3 squares one
                 "B", "B", "B", "V", "B", "B", "M", "B", "B", "B"
             ]
         }
+
+water_bomb_base_fold_data = {
+            "vertices_coords": [
+                [0, 20, 0], [20, 20, 0], [20, 10, 0], [20, 0, 0], [0, 0, 0], [0, 10, 0], [10, 10, 0]
+            ],
+            "edges_vertices": [
+                [0, 1], [0, 6], [1, 6], [0, 5], [1,2], [5,6], [6,2], [5,4], [6,4], [6,3], [2,3], [4,3]
+            ],
+            "faces_vertices": [
+                [6,1,0], [6,2,1], [6,3,2], [6,4,3], [6,5,4], [6,0,5]
+            ],
+            "edges_assignment": [
+                "B", "M", "M", "B", "B", "V", "V", "B", "M", "M", "B", "B",
+            ]
+        }
+
+example_fold_data = three_square_fold_data
 
 
 pattern = SmoothFoldPattern(example_fold_data)
@@ -40,17 +58,26 @@ def get_fold_pattern():
 @app.route('/get-vertex-info', methods=['GET'])
 def get_vertex_info():
     """API route to get the current vertex info of the current fold pattern using vertex index."""
-    data = request.json
-    vertex_index = data.get("vertexIndex")
+    print('start')
+    data = request.args
+    vertex_index = data.get("vertexIndex", type=int)
+    print('vi',vertex_index)
+
+    if vertex_index is None:
+        return jsonify({"error": "Missing vertexIndex parameter"}), 400
 
     vertex_obj = pattern.vertex_objects[vertex_index]
+    print('ve', vertex_obj.to_dict())
+
     return jsonify(vertex_obj.to_dict())
+
+
 
 
 @app.route('/get-edge-info', methods=['GET'])
 def get_edge_info():
     """API route to get the current vertex info of the current fold pattern using vertex index and edge index."""
-    data = request.json
+    data = request.args
     vertex_index = data.get("vertexIndex")
     edge_index = data.get("edgeIndex")
 
@@ -70,16 +97,29 @@ def fold_edge():
     angle = data.get("angle")
     sym = data.get("sym")
 
-    if edge_index is None | angle is None | vertex_index is None | sym is None:
+    if edge_index is None or angle is None or vertex_index is None or sym is None:
         return jsonify({"error": "Missing parameters"}), 400
 
-    # Perform the fold in backend
-    pattern.fold_edge(edge_index, angle)
-    bend_edge(pattern.vertex_objects[vertex_index].surrounding_edges[edge_index], angle, sym)
-    #bend_edge(pattern.vertex_objects[vertex_index].surrounding_edges[edge_index], np.pi/2, 1)
+    converted_angle = np.deg2rad(angle)
+    bend_edge(pattern.vertex_objects[vertex_index].surrounding_edges[edge_index], converted_angle, sym)
+    
+    pattern_dict = pattern.to_dict()
+    print('fold', pattern_dict['fold_format'][0]['vertices'])
 
-    # Return updated fold pattern
-    return jsonify(pattern.to_dict())
+    return jsonify(pattern_dict)
+    
+    
+@app.route('/reset-pattern', methods=['GET'])
+def reset_pattern():
+    """API route to fold an edge by a given angle and according to a given symmetry"""
+    global pattern
+    pattern = SmoothFoldPattern(example_fold_data)
+    pattern_dict = pattern.to_dict()
+    print('reset', pattern_dict['fold_format'][0]['vertices'])
+
+    return jsonify(pattern_dict)
+     
+
 
 
 if __name__ == '__main__':

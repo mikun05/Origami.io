@@ -32,6 +32,7 @@ pattern = SmoothFoldPattern(example_fold_data)
 @app.route('/get-fold-pattern', methods=['GET'])
 def get_fold_pattern():
     """API route to get the current fold pattern."""
+    pattern = SmoothFoldPattern(example_fold_data)
     pattern_dict = pattern.to_dict()
     #print('p', pattern_dict.fold_format.vertices)
     return jsonify(pattern_dict)
