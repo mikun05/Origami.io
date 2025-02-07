@@ -10,9 +10,8 @@ from edge_fold import *
 app = Flask(__name__)
 CORS(app)
 
-# fold_bp = Blueprint('fold', __name__)
 
-three_square_fold_data = { #this is the 3 squares one
+three_square_fold_data = { 
             "vertices_coords": [
                 [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0]
             ],
@@ -42,7 +41,7 @@ water_bomb_base_fold_data = {
             ]
         }
 
-example_fold_data = three_square_fold_data
+example_fold_data = water_bomb_base_fold_data
 
 
 pattern = SmoothFoldPattern(example_fold_data)
@@ -58,16 +57,13 @@ def get_fold_pattern():
 @app.route('/get-vertex-info', methods=['GET'])
 def get_vertex_info():
     """API route to get the current vertex info of the current fold pattern using vertex index."""
-    print('start')
     data = request.args
     vertex_index = data.get("vertexIndex", type=int)
-    print('vi',vertex_index)
 
     if vertex_index is None:
         return jsonify({"error": "Missing vertexIndex parameter"}), 400
 
     vertex_obj = pattern.vertex_objects[vertex_index]
-    print('ve', vertex_obj.to_dict())
 
     return jsonify(vertex_obj.to_dict())
 

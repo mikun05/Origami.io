@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useState, useEffect, useContext } from "react";
 import { Canvas } from '@react-three/fiber';
 import axios from "axios";
@@ -52,7 +53,7 @@ const PatternLoader = () => {
     const resetPattern = () => {
         axios.get(`${backendLink}/reset-pattern`)
         .then(response => {
-            setFoldPattern(response.data);  // Update with new fold state
+            setFoldPattern(response.data);  // Reset to pre-fold configuraton
         })
         .catch(error => console.error("Error resetting pattern:", error));
     }
@@ -66,8 +67,15 @@ const PatternLoader = () => {
                 <div style={{display: 'flex', flexDirection: 'column', width: '80rem', height: '50rem', margin: 'auto', gap: '1rem' }}>
                     <br></br>
                     <br></br>
+
                     <h2>Fold Pattern Viewer</h2>
                     <div style={{display: 'flex', flexDirection: 'row', margin:'auto', gap:'1rem'}}> 
+
+                        <div style={{display: 'flex', flexDirection: 'column', width:'15rem'}}>
+                            <VertexViewer vertexIndex={focusedVertexIndex} pattern={foldPattern}/>
+                        </div>
+
+
                         <div  style={{ width: '50rem', height: '30rem', backgroundColor: '#fc6c8530', margin:'auto'}}>
                             <Canvas 
                                 camera={{ position: [0, 0, 5], fov: 50 }} resize={{ debounce: 0 }}>
@@ -76,14 +84,6 @@ const PatternLoader = () => {
                                     <PatternViewer pattern={foldPattern} />
 
                             </Canvas>
-                        </div>
-
-                        <div style={{display: 'flex', flexDirection: 'column', width:'15rem'}}>
-                        {(focusedVertexIndex !== null) ? (
-                                    <VertexViewer vertexIndex={focusedVertexIndex} pattern={foldPattern}/>
-                                ) : (
-                                    <p>Click a vertex</p>
-                                )}
                         </div>
 
                         

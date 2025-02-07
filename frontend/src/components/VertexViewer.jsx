@@ -1,11 +1,6 @@
 /* eslint-disable no-unused-vars */
- /* eslint-disable react/prop-types */
-/* eslint-disable react/no-unknown-property */
-import * as THREE from 'three';
+/* eslint-disable react/prop-types */
 import { useContext, useEffect, useRef, useState } from 'react';
-import { VertexColor, VertexSizes } from './PatternViewerStates';
-import { PointMaterial } from '@react-three/drei'
-import { useThree } from '@react-three/fiber';
 import { PatternContext } from '../contexts/patternContext';
 import axios from 'axios';
 import { backendLink } from './PatternLoader';
@@ -13,35 +8,60 @@ import { backendLink } from './PatternLoader';
 
 
 const VertexViewer = (props) => {
-    const { focusedVertexIndex } = useContext(PatternContext);
-    const [focusedVertex, setFocusedVertex] = useState(null);
+    const { focusedVertexIndex, setFocusedEdgeIndex, focusedEdgeIndex } = useContext(PatternContext);
+    // const [focusedVertex, setFocusedVertex] = useState(null);
+    const [surroundEdges, setSurroundingEdges] = useState(null)
+
+    const pattern = props.pattern
+
 
     useEffect(() => {
         if (focusedVertexIndex !== null){
-            console.log('refecth vertec info')
-            fetchFoldVertex(focusedVertexIndex)
+            updateSurroundingEdgeObjs(focusedVertexIndex)
+            // if (surroundEdges !== null && surroundEdges.length !== 0){
+            //     updateFocusedEdges(surroundEdges)
+            // }
         } 
-    }, [focusedVertexIndex, props.pattern])
+    }, [focusedVertexIndex])
+
+    
+
+    
+    // useEffect(() => {      
+    //     if (surroundEdges !== null && surroundEdges.length !== 0){
+    //         updateFocusedEdges(surroundEdges)
+    //     }
+    // }, [surroundEdges])
 
 
-    const fetchFoldVertex = (vertexIndex) => {
-        console.log('getting', vertexIndex)
-        axios.get(`${backendLink}/get-vertex-info`, { params: {vertexIndex} })
-            .then(response => {
-                setFocusedVertex(response.data);
-            })
-            .catch(error => console.error("Error fetching vertex data:", error));
-    };
+    const updateFocusedEdges = (edges) => {
+        const focused_edge_index = edges.map(edge_obj => edge_obj['index']); 
+        setFocusedEdgeIndex(focused_edge_index)
+    }
+
+    const updateSurroundingEdgeObjs = (vertex) => {
+            setSurroundingEdges(pattern['vertex_objects'][vertex]['surrounding_edges']);
+    }
+
+    useEffect(() => {
+        console.log('Updated FOCUSED:', focusedEdgeIndex);
+    }, [focusedEdgeIndex])
+
+
+    // const fetchFoldVertex = (vertexIndex) => {
+    //     console.log('getting', vertexIndex)
+    //     axios.get(`${backendLink}/get-vertex-info`, { params: {vertexIndex} })
+    //         .then(response => {
+    //             setFocusedVertex(response.data);
+    //         })
+    //         .catch(error => console.error("Error fetching vertex data:", error));
+    // };
 
     const vertexInfo = () => {
-        const [x, y, z] = props.pattern['fold_format'][0]['vertices'][focusedVertexIndex]
-        const surround_edges = []
-        const surround_edge_objs = props.pattern['vertex_objects'][focusedVertexIndex]['surrounding_edges']
+        const [x, y, z] = pattern['fold_format'][0]['vertices'][focusedVertexIndex]
 
-        for (let edge_obj of surround_edge_objs) {
-            surround_edges.push(edge_obj['edge_pointer'])
-        }
-  
+        const surround_edges = surroundEdges ? surroundEdges.map(edge_obj => edge_obj['edge_pointer']) : []
+
         
         return(
             <div>
@@ -58,7 +78,7 @@ const VertexViewer = (props) => {
     }
 
     return(
-        focusedVertex ? vertexInfo() : <></>
+        (focusedVertexIndex !== null) ? vertexInfo() : <p>n</p>
     )
 }
 

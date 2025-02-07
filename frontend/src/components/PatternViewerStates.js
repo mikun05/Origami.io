@@ -1,8 +1,8 @@
 export const VertexColor = {
-    Default: [255, 255, 255],
-    Hovered: [255, 173, 0],
-    Clicked: [255, 173, 0],
-    Violated: [255, 0, 0]
+    Default: [0, 0, 0],
+    Hovered: [1, 0.5, 0],
+    Clicked: [0.5, 1, 0],
+    Violated: [1, 0, 0]
 } 
 
 export const VertexSizes = {
@@ -11,3 +11,9 @@ export const VertexSizes = {
     Clicked: 20,
 } 
 
+export const EdgeColor = {
+    Default: [1, 1, 1],
+    Hovered: [0, 1, 0],
+    Clicked: [0, 0, 1],
+    Highlight: [0,1, 1]
+}

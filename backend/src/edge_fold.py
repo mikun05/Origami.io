@@ -305,43 +305,6 @@ def bend_edge(edge_obj, angle_between_faces, sym):
 
 
     
-    # for vertex in faceL:
-    #     if any(x != current_crease.new_vertices[vertex] for x in edge_obj.edge_coords):
-    #         vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex)
-    #         new_vector = alt_rotate_local_xy_to_xz(vertex_vector, el1_unit, e2_unit, el3_unit, -left_angle) #we rotate all vertices of the face (that are not the edge vertices) by the required right angle along the local y axis 
-    #         new_vertex = edge_obj.source_vertex + new_vector
-            
-    #         current_crease.new_vertices[vertex] = new_vertex #updates the crease pattern
-
-            
-    #         queue = []             
-    #         visited_faces = []
-    #         visited_edges = []
-    #         #now bfs to update everything else to match
-    #         bfs_on_face(faceL, edge_obj.faceL, edge_obj, queue, visited_faces, visited_edges)
-            
-    # for vertex in faceR:
-    #     if any(x != current_crease.new_vertices[vertex] for x in edge_obj.edge_coords):
-    #         vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex)
-    #         new_vector = alt_rotate_local_xy_to_xz(vertex_vector, er1_unit, e2_unit, er3_unit, right_angle) #we rotate all vertices of the face (that are not the edge vertices) by the required right angle along the local y axis 
-    #         new_vertex = edge_obj.source_vertex + new_vector
-            
-    #         print(current_crease.flat_vertices[vertex])
-
-    #         current_crease.new_vertices[vertex] = new_vertex #updates the crease pattern
-    #         print(current_crease.new_vertices[vertex])
-    #         queue = []             
-    #         visited_faces = []
-    #         visited_edges = []
-            
-    #         #now bfs to update everything else to match
-    #         bfs_on_face(faceR, edge_obj.faceL, edge_obj, queue, visited_faces, visited_edges)
-            
-            
-            
-        
-    
-    
     
     
         
