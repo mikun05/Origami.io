@@ -41,7 +41,98 @@ water_bomb_base_fold_data = {
             ]
         }
 
-example_fold_data = water_bomb_base_fold_data
+twist ={
+    "file_spec": 1,
+    "file_creator": "Mathematica",
+    "file_author": "Thomas Hull",
+    "file_classes": ["singleModel"],
+    "frame_title": "Rigidly folded square twist",
+    "frame_classes": ["foldedForm"],
+    "frame_attributes": ["3D"],
+    "vertices_coords": [
+        [0, 0, 0],
+        [10, 0, 0],
+        [10, 20, 0],
+        [0, 20, 0],
+        [18.7, 0, -4.97],
+        [38.7, 0, -4.97],
+        [38.7, 10, -4.97],
+        [18.7, 10, -4.97],
+        [28.7, 14.16, 4.13],
+        [38.7, 14.16, 4.13],
+        [38.7, 34.16, 4.13],
+        [28.7, 34.16, 4.13],
+        [0, 34.16, 9.09],
+        [0, 24.16, 9.09],
+        [20, 24.16, 9.09],
+        [20, 34.16, 9.09]
+    ],
+    "faces_vertices": [
+        [0, 1, 2, 3],
+        [1, 4, 7, 2],
+        [4, 5, 6, 7],
+        [7, 6, 9, 8],
+        [8, 9, 10, 11],
+        [15, 14, 8, 11],
+        [12, 13, 14, 15],
+        [3, 2, 14, 13],
+        [2, 7, 8, 14]
+    ],
+    "edges_vertices": [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 0],
+        [4, 5],
+        [5, 6],
+        [6, 7],
+        [7, 4],
+        [8, 9],
+        [9, 10],
+        [10, 11],
+        [11, 8],
+        [12, 13],
+        [13, 14],
+        [14, 15],
+        [15, 12],
+        [2, 7],
+        [7, 8],
+        [8, 14],
+        [14, 2],
+        [3, 13],
+        [1, 4],
+        [6, 9],
+        [11, 15]
+    ],
+    "edges_assignment": [
+        "B",
+        "M",
+        "V",
+        "B",
+        "B",
+        "B",
+        "V",
+        "V",
+        "M",
+        "B",
+        "B",
+        "V",
+        "B",
+        "M",
+        "M",
+        "B",
+        "V",
+        "M",
+        "M",
+        "V",
+        "B",
+        "B",
+        "B",
+        "B"
+    ]
+}
+
+example_fold_data = twist
 
 
 pattern = SmoothFoldPattern(example_fold_data)

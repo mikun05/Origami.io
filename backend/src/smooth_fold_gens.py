@@ -262,7 +262,8 @@ class SmoothFoldPattern():
             "fold_format": [{
                 "vertices": self.geom.new_vertices,
                 "edges": self.geom.edges,
-                "faces": self.geom.faces,   
+                "faces": self.geom.faces,  
+                "edges_assignments": self.geom.edges_assignments 
             }],
             "vertex_objects": [vertex_obj.to_dict() for vertex_obj in self.vertex_objects]
         }

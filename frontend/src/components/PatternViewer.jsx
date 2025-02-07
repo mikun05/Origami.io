@@ -17,8 +17,12 @@ const PatternViewer = (props) => {
     const [vertexMetadata, setVertexMetaData] = useState(props.pattern['vertex_objects'])
 
     const vertices = new Float32Array(props.pattern['fold_format'][0]['vertices'].flat()) //only thing subject to change after foldings
+    const vertices_for_edges = new Float32Array(props.pattern['fold_format'][0]['vertices'].flat()) //only thing subject to change after foldings
     const edges = new Uint16Array(props.pattern['fold_format'][0]['edges'].flat())
+    const edge_assignments = props.pattern['fold_format'][0]['edges_assignments']
     const faces = new Uint16Array(props.pattern['fold_format'][0]['faces'].flat())
+
+    console.log('edge_assg', edge_assignments)
 
     const vertex_colors = new Float32Array(vertices.length);
     for (let i = 0; i < vertices.length; i++) {
@@ -29,17 +33,70 @@ const PatternViewer = (props) => {
     const [vertexColors, setVertexColors] = useState(vertex_colors)
 
 
-    const edge_colors = new Float32Array(edges.length *3 );
-    for (let i = 0; i < edges.length; i++) {
-        edge_colors[i * 6] = EdgeColor.Default[0];   // Red  
-        edge_colors[i * 6 + 1] = EdgeColor.Default[1];   // Red  
-        edge_colors[i * 6 + 2] = EdgeColor.Default[2];   // Red 
-        edge_colors[i * 6 + 3] = EdgeColor.Default[0];   // Red  
-        edge_colors[i * 6 + 4] = EdgeColor.Default[1];   // Red  
-        edge_colors[i * 6 + 5] = EdgeColor.Default[2];   // Red  
+    const edge_colors = new Float32Array(edges.length * 3 );
+    const edge_vertices = new Float32Array(edges.length * 3);
+
+    // for (let i = 0; i < edges.length/2; i++) {
+    //     const start = (i * 6) //index*2 is where v_1 is, index*2 + 1 is where v_2 is
+
+    //     const edge_type = EdgeColor[edge_assignments[Math.floor(i)]]
+
+    //     const v_in = (i * 2) //index*2 is where v_1 is, index*2 + 1 is where v_2 is
+    //     const v_out = (i * 2) + 1
+
+    //     console.log(i, edge_type)
+
+    //     //now I need the x,y,z coordinates v_1 and v_2 refer to in the vertex list. i need th eposition it points to
+    //     //to get the positions in the vertex list, pos_1 = v_1 * 3, v_1*3+1, v_1*3+2 and so on
+
+    //     // edge_colors[(v_in * 3)] = EdgeColor[edge_type][0]
+    //     // edge_colors[(v_out * 3)] = EdgeColor[edge_type][0]
+    //     // edge_colors[(v_in * 3 + 1)] = EdgeColor[edge_type][1]
+    //     // edge_colors[(v_out * 3 + 1)] = EdgeColor[edge_type][1]
+    //     // edge_colors[(v_in * 3 + 2)] = EdgeColor[edge_type][2]
+    //     // edge_colors[(v_out * 3 + 2)] = EdgeColor[edge_type][2]
+               
+
+    //     edge_colors[start ] = edge_type[0]; 
+    //     edge_colors[start + 3] = edge_type[0];    
+    //     edge_colors[start + 1] = edge_type[1];    
+    //     edge_colors[start + 4] = edge_type[1];    
+    //     edge_colors[start + 2] = edge_type[2];   
+    //     edge_colors[start + 5] = edge_type[2];    
+       
+    //     }
+
+    for (let i = 0; i < edges.length / 2; i++) {
+        const startIdx = i * 6; // 2 vertices per edge, each with 3 color components
+    
+        const v1 = edges[i * 2]; // Start vertex
+        const v2 = edges[i * 2 + 1]; // End vertex
+    
+        // Copy the vertex positions (duplicating the shared vertices)
+        edge_vertices[startIdx] = vertices[v1 * 3];
+        edge_vertices[startIdx + 1] = vertices[v1 * 3 + 1];
+        edge_vertices[startIdx + 2] = vertices[v1 * 3 + 2];
+        edge_vertices[startIdx + 3] = vertices[v2 * 3];
+        edge_vertices[startIdx + 4] = vertices[v2 * 3 + 1];
+        edge_vertices[startIdx + 5] = vertices[v2 * 3 + 2];
+    
+        // Assign the same color to both duplicated vertices of the edge
+        const edge_type = EdgeColor[edge_assignments[i]]; 
+    
+        edge_colors[startIdx] = edge_type[0];
+        edge_colors[startIdx + 1] = edge_type[1];
+        edge_colors[startIdx + 2] = edge_type[2];
+
+        edge_colors[startIdx + 3] = edge_type[0];
+        edge_colors[startIdx + 4] = edge_type[1];
+        edge_colors[startIdx + 5] = edge_type[2];
     }
+    
+      
+    console.log('ed',edge_colors)
     const [edgeColors, setEdgeColors] = useState(edge_colors)
 
+    const new_edge_color = edge_assignments.map((c,i) => EdgeColor[edge_assignments[Math.floor(i)]])
 
 
     const pointsRef = useRef();
@@ -118,10 +175,9 @@ const PatternViewer = (props) => {
       };
 
     
-    const updatePointsListState = (attribute, index, newColor, newSize) => {
+    const updatePointsListState = (attribute, index, newColor, newSize,) => {
         if (!pointsRef.current) return;
-        let nextVertexColors = edgeColors.map((c,i) => 0)
-
+        let nextVertexColors = edgeColors.map((c,i) => 1)
 
         if (index !== null){
             nextVertexColors = vertexColors.map((c,i) => {
@@ -133,33 +189,30 @@ const PatternViewer = (props) => {
                     case index*3 + 2:
                         return newColor[2];
                 }
-
-                return 0
+                return Math.floor(i/3) === focusedVertexIndex ? c : 1
             })
         }
-
         setVertexColors(nextVertexColors)
 
         pointsRef.current.geometry.attributes.color.array = vertexColors;
 
         pointsRef.current.geometry.attributes.color.needsUpdate = true; 
         pointsRef.current.material.needsUpdate = true;
-
     };
 
     const updateLinesListState = (attribute, indices, newColor) => {
         if (!linesRef.current) return;
-        let nextEdgeColors = edgeColors.map((c,i) => 1)
+        let nextEdgeColors = edgeColors.map((c,i) => edge_colors[i])
 
 
         if (indices !== null && indices.length !== 0 ){
             nextEdgeColors = edgeColors.map((c,i) => {
                 //index is the position of the edge (v_1, v_2) in the edge list
                 //This has been flattened so we do index * 2 to get to the position in the flat list.
+                console.log('h', edge_vertices[indices[0]])
                 for (let index of indices) {
-                    const v_in = edges[(index * 2)] //index*2 is where v_1 is, index*2 + 1 is where v_2 is
-                    const v_out = edges[(index * 2) + 1]
-
+                    const v_in = (index * 2) //index*2 is where v_1 is, index*2 + 1 is where v_2 is
+                    const v_out = (index * 2) + 1
 
                     //now I need the x,y,z coordinates v_1 and v_2 refer to in the vertex list. i need th eposition it points to
                     //to get the positions in the vertex list, pos_1 = v_1 * 3, v_1*3+1, v_1*3+2 and so on
@@ -168,18 +221,18 @@ const PatternViewer = (props) => {
                         case (v_in * 3):
                         case (v_out * 3):
                             console.log(i, 'change red')
-                            return newColor[0];
+                            return edge_colors[i] * 10;
                         case (v_in * 3 + 1):
                         case (v_out * 3 + 1):
                             console.log(i, 'change green')
-                            return newColor[1];
+                            return edge_colors[i] * 10;
                         case  (v_in * 3 + 2):
                         case (v_out * 3 + 2):
                             console.log(i, 'change blue')
-                            return newColor[2];
+                            return edge_colors[i] * 10;
                     }
                 }
-                return 1
+                return edge_colors[i]
             })
         }
 
@@ -200,6 +253,13 @@ const PatternViewer = (props) => {
         if (!pointsRef.current) return;
         const index = raycastVertex(event); 
         setFocusedVertexIndex((prevIndex) => prevIndex === index ? null : index);
+    } 
+
+    const handlePointerOver = (event) => {
+        if (!pointsRef.current) return;
+        const index = raycastVertex(event); 
+        if (index !== focusedVertexIndex) {updatePointsListState('vertex hover color', index, VertexColor.Hovered, VertexSizes.Clicked);}
+
     } 
 
     const handleEdgePointerDown = (event) => {
@@ -241,16 +301,16 @@ const PatternViewer = (props) => {
 
     return (
         <>
-            <lineSegments ref={linesRef} onClick={handleEdgePointerDown}>
+            <lineSegments ref={linesRef} onClick={handleEdgePointerDown} renderOrder={2}>
                 <bufferGeometry>
-                    <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
+                    <bufferAttribute attach="attributes-position" args={[edge_vertices, 3]} />
                     <bufferAttribute attach="attributes-color" args={[edgeColors, 3]} />
-                    <bufferAttribute attach="index" args={[edges, 1]} />
                 </bufferGeometry>
-                <lineBasicMaterial transparent vertexColors linewidth={10} depthWrite={false} toneMapped={false}/>
+                <lineBasicMaterial vertexColors={true} dashSize={5} gapSize={5} scale={5}/>
+
             </lineSegments>
 
-            <points ref={pointsRef} onClick={handlePointerDown} >
+            <points ref={pointsRef} onClick={handlePointerDown} onPointerOver={handlePointerOver} renderOrder={1}>
                 <bufferGeometry>
                     <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                     <bufferAttribute attach="attributes-color" args={[vertexColors, 3]} />
