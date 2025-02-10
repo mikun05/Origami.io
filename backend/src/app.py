@@ -28,7 +28,7 @@ three_square_fold_data = {
 
 water_bomb_base_fold_data = {
             "vertices_coords": [
-                [0, 20, 0], [20, 20, 0], [20, 10, 0], [20, 0, 0], [0, 0, 0], [0, 10, 0], [10, 10, 0]
+                [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
             ],
             "edges_vertices": [
                 [0, 1], [0, 6], [1, 6], [0, 5], [1,2], [5,6], [6,2], [5,4], [6,4], [6,3], [2,3], [4,3]
@@ -132,7 +132,7 @@ twist ={
     ]
 }
 
-example_fold_data = twist
+example_fold_data = three_square_fold_data
 
 
 pattern = SmoothFoldPattern(example_fold_data)
@@ -157,8 +157,6 @@ def get_vertex_info():
     vertex_obj = pattern.vertex_objects[vertex_index]
 
     return jsonify(vertex_obj.to_dict())
-
-
 
 
 @app.route('/get-edge-info', methods=['GET'])
@@ -194,6 +192,31 @@ def fold_edge():
     print('fold', pattern_dict['fold_format'][0]['vertices'])
 
     return jsonify(pattern_dict)
+
+
+@app.route('/fold-edge-around-vertex', methods=['POST'])
+def fold_edges_around_vertex():
+    """API route to fold an edge by a given angle and according to a given symmetry"""
+    data = request.json
+    vertex_index = data.get("vertexIndex")
+    angle = data.get("angle")
+    sym = data.get("sym")
+
+    if angle is None or vertex_index is None or sym is None:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    converted_angle = np.deg2rad(angle)
+    
+    for edge in pattern.vertex_objects[vertex_index].surrounding_edges:    
+        if (edge): 
+            print(edge.edge_index)
+            bend_edge(edge, converted_angle, sym)
+    
+    pattern_dict = pattern.to_dict()
+    print('fold', pattern_dict['fold_format'][0]['vertices'])
+
+    return jsonify(pattern_dict)
+
     
     
 @app.route('/reset-pattern', methods=['GET'])

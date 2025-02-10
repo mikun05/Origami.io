@@ -12,11 +12,11 @@ export const VertexSizes = {
 } 
 
 export const EdgeColor = {
-    'M': [0.1, 0, 0],
-    'V': [0, 0.1, 0],
+    'M': [0.1, 0, 0.001],
+    'V': [0, 0.1, 0.001],
     'B': [0, 0, 0],
-    Default: [1, 1, 1],
-    Hovered: [0, 1, 0],
-    Clicked: [0, 0, 1],
-    Highlight: [0,1, 1]
+    Default: [1,1,1],
+    Hovered: [2,2,2],
+    Clicked: [10,10,10],
+    Highlight: [5,5,200]
 }

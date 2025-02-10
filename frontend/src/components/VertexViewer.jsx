@@ -1,42 +1,23 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { PatternContext } from '../contexts/patternContext';
-import axios from 'axios';
-import { backendLink } from './PatternLoader';
-
-
 
 const VertexViewer = (props) => {
-    const { focusedVertexIndex, setFocusedEdgeIndex, focusedEdgeIndex } = useContext(PatternContext);
-    // const [focusedVertex, setFocusedVertex] = useState(null);
+    const { focusedVertexIndex, setFocusedVertexEdges, focusedVertexEdges } = useContext(PatternContext);
     const [surroundEdges, setSurroundingEdges] = useState(null)
 
     const pattern = props.pattern
 
-
     useEffect(() => {
         if (focusedVertexIndex !== null){
             updateSurroundingEdgeObjs(focusedVertexIndex)
-            // if (surroundEdges !== null && surroundEdges.length !== 0){
-            //     updateFocusedEdges(surroundEdges)
-            // }
         } 
     }, [focusedVertexIndex])
 
-    
-
-    
-    // useEffect(() => {      
-    //     if (surroundEdges !== null && surroundEdges.length !== 0){
-    //         updateFocusedEdges(surroundEdges)
-    //     }
-    // }, [surroundEdges])
-
-
     const updateFocusedEdges = (edges) => {
         const focused_edge_index = edges.map(edge_obj => edge_obj['index']); 
-        setFocusedEdgeIndex(focused_edge_index)
+        setFocusedVertexEdges(focused_edge_index)
     }
 
     const updateSurroundingEdgeObjs = (vertex) => {
@@ -44,8 +25,8 @@ const VertexViewer = (props) => {
     }
 
     useEffect(() => {
-        console.log('Updated FOCUSED:', focusedEdgeIndex);
-    }, [focusedEdgeIndex])
+        console.log('Updated FOCUSED:', focusedVertexEdges);
+    }, [focusedVertexEdges])
 
 
     // const fetchFoldVertex = (vertexIndex) => {
@@ -70,7 +51,7 @@ const VertexViewer = (props) => {
                 <p>Surrounding Edges <br></br>
                     </p>
                     {surround_edges.map((edge, index) => {
-                        return <p key={`${edge[0]}-${edge[1]}-${index}`}>{`Vtx ${edge[0]} to Vtx ${edge[1]}`}</p>;
+                        return <p key={`${edge[0]}-${edge[1]}-${index}`}>{`${index}: Vtx ${edge[0]} to Vtx ${edge[1]}`}</p>;
                     })}
             </div>
            
@@ -78,7 +59,8 @@ const VertexViewer = (props) => {
     }
 
     return(
-        (focusedVertexIndex !== null) ? vertexInfo() : <p>n</p>
+        // (focusedVertexIndex !== null) ? vertexInfo() : <h4>Select A Vertex</h4>
+        <></>
     )
 }
 
