@@ -56,6 +56,21 @@ book_fold = {
     ]
 }
 
+miura_ori_fold = {
+    "vertices_coords": [
+        [-10,-4,0], [-4,-4,0], [2,-4,0], [-6,0,0], [0,0,0], [6,0,0], [-10,4,0], [-4,4,0], [2,4,0]
+    ],
+    "edges_vertices": [
+        [6, 7], [7, 8], [3,4], [4,5], [0,1], [1,2], [6, 3], [7, 4], [8,5], [3,0], [4,1], [5,2]
+    ],
+    "faces_vertices": [
+        [4,7,6,3], [4,5,8,7], [4,3,0,1], [4,1,2,5]
+    ],
+    "edges_assignment": [
+        "B", "B", "V", "M", "B", "B", "B", "M", "B", "B", "M", "B"
+    ]
+}
+
 twist ={
     "file_spec": 1,
     "file_creator": "Mathematica",
@@ -147,7 +162,7 @@ twist ={
     ]
 }
 
-example_fold_data = book_fold
+example_fold_data = miura_ori_fold
 
 pattern = SmoothFoldPattern(example_fold_data)
 
