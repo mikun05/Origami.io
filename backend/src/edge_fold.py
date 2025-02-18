@@ -1,13 +1,6 @@
 import numpy as np
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
 
-def is_vector_in_2nd_quadrant(v):
-    """
-    When a vector is pointing into the second quadrant, 
-    the left and right faces are gotten the wrong way around
-    """
-    x, y = v[0], v[1]
-    return x < 0 and y > 0
 
 def get_direction_vector(edge_obj):
     """
@@ -21,10 +14,6 @@ def get_direction_vector(edge_obj):
     non_source_vertex = p_2 if p_1 == edge_obj.original_source_vertex else p_1
     
     d =  np.array(non_source_vertex) -  np.array(edge_obj.original_source_vertex) 
-    
-    # if is_vector_in_2nd_quadrant(d):
-    #     d =   np.array(non_source_vertex) - np.array(edge_obj.original_source_vertex) ##if it is in the 2nd quadranyt, the direction vector is swapped such that the left and right faces are correct relative to the rest of my calculations
-    
     d_norm = d / np.linalg.norm(d)
     
     print('d_norm', d_norm)
@@ -35,7 +24,6 @@ def rodrigues_rot(vertex, edge_obj, angle):
     n = get_direction_vector(edge_obj)
     
     v =  np.array(vertex) - np.array(edge_obj.original_source_vertex) 
-    
     
     sin = np.sin(angle)
     cos = np.cos(angle)
@@ -173,7 +161,6 @@ def get_edges_of_face(face, edge_vertices):
     # print('edges_of_face', edges_of_face)
     return(edges_of_face)
 
-
 def get_adjacent_faces(face, edge_vertices, face_vertices, edge_assignment):
     
     """
@@ -200,9 +187,7 @@ def get_adjacent_faces(face, edge_vertices, face_vertices, edge_assignment):
             if all(x in face for x in edge):
                 adjacent_faces.append(face)
                 
-    return(adjacent_faces)
-
-                    
+    return(adjacent_faces)                   
                     
 def turn_face(face, visited_vertices, current_crease):
     """
@@ -226,27 +211,6 @@ def turn_face(face, visited_vertices, current_crease):
             
             current_crease.new_vertices[vertex] = new_vertex.tolist()
             
-
-def turn_face_2(face, visited_vertices, current_crease, angle):
-    """
-    Method:
-    Identify visited vertex on face 
-    Use the information on the angle with whcih the folded edge was folded to "fold" all other edges 
-    """
-    visited_face_vertex = [x for x in face if x in visited_vertices][0]
-    
-    
-    for vertex in face:
-        if vertex not in visited_vertices:
-            
-            original_vector_from_vistied = np.array(current_crease.flat_vertices[vertex]) - np.array(current_crease.flat_vertices[visited_face_vertex])
-            
-            new_vertex = np.array(current_crease.new_vertices[visited_face_vertex]) + original_vector_from_vistied
-            
-            current_crease.new_vertices[vertex] = new_vertex.tolist()
-    
-                                        
-
 
 def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visited_edges):
     """
@@ -313,12 +277,7 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
                 
                     queue.append(neighbour_face)
                     
-    
-
-                
-                
-         
-            
+      
 def bend_edge(edge_obj, angle_between_faces, sym):
     """
     Convention chosen, bend and push through right first then the left
@@ -376,12 +335,13 @@ def bend_edge(edge_obj, angle_between_faces, sym):
             bfs_on_face(faceL, edge_obj.faceR, edge_obj, queue, visited_faces, visited_edges)
 
             #we rotate all vertices of the face (that are not the edge vertices) by the required right angle along the local y axis 
+      
+      
             
 def update_edges_around_vertex(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         edge_obj.update_edge()
         print(edge_obj.curve_angle)
-
         
 def bend_around_vertex(vertex_obj, p_angle):
     """
