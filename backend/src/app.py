@@ -155,6 +155,9 @@ def get_vertex_info():
         return jsonify({"error": "Missing vertexIndex parameter"}), 400
 
     vertex_obj = pattern.vertex_objects[vertex_index]
+    
+    for edge_obj in vertex_obj.surrounding_edges:
+        edge_obj.update_edge()
 
     return jsonify(vertex_obj.to_dict())
 
@@ -169,6 +172,11 @@ def get_edge_info():
     
     if edge_index is None or vertex_index is None:
         return jsonify({"error": "Missing parameters"}), 400
+    
+    vertex_obj = pattern.vertex_objects[vertex_index]
+    
+    for edge_obj in vertex_obj.surrounding_edges:
+        edge_obj.update_edge()
     
     vertex_edge_objects = pattern.vertex_objects[vertex_index].surrounding_edges
     
