@@ -41,6 +41,21 @@ water_bomb_base_fold_data = {
             ]
         }
 
+book_fold = {
+    "vertices_coords": [
+                [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
+    ],
+    "edges_vertices": [
+        [0, 1], [0, 5], [1,2], [5,6], [5,4], [6,2], [2,3], [4,3]
+    ],
+    "faces_vertices": [
+        [6,2,1,0,5], [6,5,4,3,2]
+    ],
+    "edges_assignment": [
+        "B", "B", "B", "V", "B", "V", "B", "B"
+    ]
+}
+
 twist ={
     "file_spec": 1,
     "file_creator": "Mathematica",
@@ -132,7 +147,7 @@ twist ={
     ]
 }
 
-example_fold_data = water_bomb_base_fold_data
+example_fold_data = book_fold
 
 pattern = SmoothFoldPattern(example_fold_data)
 
