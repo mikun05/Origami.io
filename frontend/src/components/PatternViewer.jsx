@@ -513,10 +513,10 @@ const PatternViewer = (props) => {
                         <bufferAttribute attach="attributes-color" args={[vertexColors, 3]} />
                         <bufferAttribute attach="attributes-size" args={[vertex_sizes, 1]} />
                     </bufferGeometry>
-                    <PointMaterial transparent vertexColors size={0.75} depthWrite={false} toneMapped={false} />
+                    <PointMaterial transparent vertexColors size={1} depthWrite={false} toneMapped={false} />
                 </points>
 
-                {/* <mesh>
+                <mesh>
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                         <bufferAttribute attach="index" args={[faces, 1]} />
@@ -529,8 +529,8 @@ const PatternViewer = (props) => {
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                         <bufferAttribute attach="index" args={[faces, 1]} />
                     </bufferGeometry>
-                    <meshBasicMaterial color="grey" wireframe={false} side={THREE.BackSide}/>
-                </mesh> */}
+                    <meshBasicMaterial color="darkOrange" wireframe={false} side={THREE.BackSide}/>
+                </mesh>
             </RotateObject>
         </>
     );

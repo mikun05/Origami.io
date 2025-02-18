@@ -38,22 +38,17 @@ const FoldVertexDialogue = (props) => {
             .catch(error => console.error("Error folding around vertex:", error));
     };
 
-    const resetPattern = () => {
-        axios.get(`${backendLink}/reset-pattern`)
-        .then(response => {
-            setFoldPattern(response.data);  // Reset to pre-fold configuraton
-        })
-        .catch(error => console.error("Error resetting pattern:", error));
-    }
 
 
     return(
-        <form method="post" onSubmit={handleFoldEdge} onReset={resetPattern}>
+        <form method="post" onSubmit={handleFoldEdge}>
             <label>
             Uniform Fold around <br></br><br></br>
-            x: {vertexPoint[0]} <br></br>
-            y: {vertexPoint[1]} <br></br>
-            z:  {vertexPoint[2]}
+            <div style={{display: 'flex', flexDirection: 'row', gap: '1rem'}}>
+            <div>x: {Math.round(vertexPoint[0] * 100) / 100} </div>
+            <div>y: {Math.round(vertexPoint[1] * 100) / 100} </div>
+            <div>z: {Math.round(vertexPoint[2] * 100) / 100} </div>
+            </div>
             <br></br><br></br> by: <br></br>
             Angle: <input name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={180} min="0" max="180" required style={{width: '3rem'}}/>°
             <br></br>
@@ -68,15 +63,40 @@ const FoldVertexDialogue = (props) => {
             <br></br> <br></br>
             <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
                 <button type="submit" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
-                <button type="reset" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Reset</button>
             </div>
         </form>
     )
 }
 
 const FoldEdgeDialogue = (props) => {
-    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern } = useContext(PatternContext)
+    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern } = useContext(PatternContext)
+    const [currentAngle, setCurrentAngle] = useState(180)
+    const [foldType, setFoldType] = useState('B')
 
+    useEffect(() => {
+        if (focusedVertexIndex === undefined || focusedVertexIndex === null || focusedEdgeIndex === undefined || focusedEdgeIndex === null) return;
+
+        console.log('doing angle stuff')
+        const vertexIndex = focusedVertexIndex
+        const edgeIndex = focusedEdgeIndex 
+
+        axios.get(`${backendLink}/get-edge-info`, { params: { vertexIndex, edgeIndex }})
+        .then(response => {
+            console.log('angle', response.data['angle'])
+            setCurrentAngle( Math.round(response.data['angle'] * (180/Math.PI) * 100) / 100);
+            setFoldType(response.data['fold_type'])
+        })
+        .catch(error => console.error("Error fetching angle data:", error));
+    }, [focusedEdgeIndex, focusedVertexIndex])
+
+    const handleAngleChange = (e) => {
+        const value = e.target.value;
+        // Allow empty string for better UX (so user can clear the field)
+        setCurrentAngle(value === '' ? '' : Number(value));
+    };
+
+    
+    
     const handleFoldEdge = (e) => {
         if (focusedVertexIndex === undefined || focusedVertexIndex === null || focusedEdgeIndex === undefined || focusedEdgeIndex === null) return;
         e.preventDefault();
@@ -84,9 +104,9 @@ const FoldEdgeDialogue = (props) => {
         const form = e.target;
         const formData = new FormData(form);
         const vertexIndex = focusedVertexIndex
-        const edgeIndex = focusedEdgeIndex / 2
+        const edgeIndex = focusedEdgeIndex
         const angle = Number(formData.get('foldEdge'))
-        const sym = 1
+        const sym = Number(formData.get('foldSym'))
         
         axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym})
             .then(response => {
@@ -95,23 +115,18 @@ const FoldEdgeDialogue = (props) => {
             .catch(error => console.error("Error folding edge:", error));
     };
 
-    const resetPattern = () => {
-        axios.get(`${backendLink}/reset-pattern`)
-        .then(response => {
-            setFoldPattern(response.data);  // Reset to pre-fold configuraton
-        })
-        .catch(error => console.error("Error resetting pattern:", error));
-    }
 
     return(
-        <form method="post" onSubmit={handleFoldEdge} onReset={resetPattern}>
+        <form method="post" onSubmit={handleFoldEdge}>
             <label>
-            Fold around edge by: <br></br>
-            <input name="foldEdge" type="number" defaultValue={180} required style={{width: '4rem'}}/>°
+            Fold around {foldType == 'M' ? 'Mountain' : 'Valley'} edge by: <br></br>
+            Angle: <input name="foldEdge" type="number" value={currentAngle} onChange={handleAngleChange} min="0" max="180" required style={{width: '3rem'}}/>°
+            <br></br>
+            Sym: <input name="foldSym" type="number" defaultValue={0.5} step="0.1" min="0" max="1" required style={{width: '2.5rem'}}/>
             </label>
+            <br></br>
             <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
                 <button type="submit" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
-                <button type="reset" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Reset</button>
             </div>
         </form>
     )
@@ -177,7 +192,7 @@ const PatternLoader = () => {
                     </div>
 
                     <div style={{display: 'flex', flexDirection: 'row', width:'60rem', gap: '1rem', margin:'auto' }}> 
-                        <div style={{display: 'flex', flexDirection: 'column', width:'15rem', gap: '1rem' }}>
+                        {/* <div style={{display: 'flex', flexDirection: 'column', width:'15rem', gap: '1rem' }}>
                             <p>Test Cases: <br></br>Fold first valley fold from left by 90 degrees:</p>
                             <button onClick={() => handleFoldEdge(1, 0, 90, 0.5)}>
                                 evenly (0.5)
@@ -205,7 +220,7 @@ const PatternLoader = () => {
                             <button onClick={() => handleFoldEdge(2, 0, -45, 0.2)}>
                                 right:0.2, left:0.8
                             </button>
-                        </div>
+                        </div> */}
 
                         <button onClick={resetPattern} style={{height: '4rem', margin: 'auto'}}>Reset Fold Pattern</button>
                     </div>

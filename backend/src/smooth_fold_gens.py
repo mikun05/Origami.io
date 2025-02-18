@@ -112,9 +112,13 @@ class SmoothFoldGeometry(CreasePattern):
         
         angle = np.arccos(dot_product)
         
-        fold_angle = scale * angle ##scale * (np.pi - angle) -> result from book assuming normla in flat crease pattern is [0,0,-1] but I have now made it so that it is [0, 0, 1] 
+        #fold_angle = scale * angle ##scale * (np.pi - angle) -> result from book assuming normla in flat crease pattern is [0,0,-1] but I have now made it so that it is [0, 0, 1] 
+        fold_angle = np.pi-angle
 
         return fold_angle
+    
+    def calculate_fold_sym(self, faceA, faceB):
+        return self.curve_strength
     
     
     def define_normalised_parametric_curve(self, edge_obj):
@@ -529,7 +533,7 @@ class SmoothFoldPatternEdge:
         self.edge_vector = edge_vector #m_jk
         self.curve_strength = curve_strength
         self.flat_width = flat_w ##initalised width across edge when flat but this can change as adjacent faces move 
-        self.width = self.width_after_curve(curve_angle) #wjk at any time other than 0
+        self.width = 0.5 #wjk at any time other than 0
         self.fold_type = fold_type
         self.curve_angle = curve_angle
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
@@ -559,11 +563,12 @@ class SmoothFoldPatternEdge:
         
     def set_curve_angle(self, angle):
         self.curve_angle = angle
-        self.update_width(angle)
         
     def update_edge(self):
-        angle = self.parent_vertex.parent_crease.calculate_fold_angles(self, self.faceL, self.faceR, self.foldType)
-        self.set_curve_angle(angle)
+        angle = self.parent_vertex.parent_crease.calculate_fold_angles(self.faceL, self.faceR, self.fold_type)
+        edge_coords = [self.parent_vertex.parent_crease.new_vertices[self.edge_pointer[0]], self.parent_vertex.parent_crease.new_vertices[self.edge_pointer[1]]]
+        self.curve_angle = angle
+        self.edge_coords = edge_coords
 
         ##update the rest
         #moev the edge and edeg vector accordingly 

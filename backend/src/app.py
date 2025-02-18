@@ -132,8 +132,7 @@ twist ={
     ]
 }
 
-example_fold_data = three_square_fold_data
-
+example_fold_data = water_bomb_base_fold_data
 
 pattern = SmoothFoldPattern(example_fold_data)
 
@@ -143,6 +142,7 @@ def get_fold_pattern():
     pattern_dict = pattern.to_dict()
     print('p', pattern_dict['fold_format'][0]['vertices'])
     return jsonify(pattern_dict)
+
 
 
 @app.route('/get-vertex-info', methods=['GET'])
@@ -159,19 +159,26 @@ def get_vertex_info():
     return jsonify(vertex_obj.to_dict())
 
 
+
 @app.route('/get-edge-info', methods=['GET'])
 def get_edge_info():
     """API route to get the current vertex info of the current fold pattern using vertex index and edge index."""
     data = request.args
-    vertex_index = data.get("vertexIndex")
-    edge_index = data.get("edgeIndex")
-
+    vertex_index = int(data.get("vertexIndex"))
+    edge_index = int(data.get("edgeIndex"))
+    
     if edge_index is None or vertex_index is None:
         return jsonify({"error": "Missing parameters"}), 400
+    
+    vertex_edge_objects = pattern.vertex_objects[vertex_index].surrounding_edges
+    
+    edge_obj_rel_vertex = next((item for item in vertex_edge_objects if item.edge_index == edge_index), None)#gets the edge index relative to the vertex
 
-    edge_obj = pattern.vertex_objects[vertex_index].surrounding_edges[edge_index]
-    return jsonify(edge_obj.to_dict())
+    # edge_obj = pattern.vertex_objects[vertex_index].surrounding_edges[edge_index_rel_vertex]
+    
+    return jsonify(edge_obj_rel_vertex.to_dict())
 
+    
     
 @app.route('/fold-edge', methods=['POST'])
 def fold_edge():
@@ -181,17 +188,26 @@ def fold_edge():
     edge_index = data.get("edgeIndex")
     angle = data.get("angle")
     sym = data.get("sym")
+    
+    vertex_edge_objects = pattern.vertex_objects[vertex_index].surrounding_edges
+    
+    edge_obj_rel_vertex = next((item for item in vertex_edge_objects if item.edge_index == edge_index), None)#gets the edge index relative to the vertex
 
     if edge_index is None or angle is None or vertex_index is None or sym is None:
         return jsonify({"error": "Missing parameters"}), 400
 
     converted_angle = np.deg2rad(angle)
-    bend_edge(pattern.vertex_objects[vertex_index].surrounding_edges[edge_index], converted_angle, sym)
+    bend_edge(edge_obj_rel_vertex, converted_angle, sym)
+    
+    for vertex_obj in pattern.vertex_objects:
+        for edge_obj in vertex_obj.surrounding_edges:
+            edge_obj.update_edge()
     
     pattern_dict = pattern.to_dict()
     print('fold', pattern_dict['fold_format'][0]['vertices'])
 
     return jsonify(pattern_dict)
+
 
 
 @app.route('/fold-edge-around-vertex', methods=['POST'])
@@ -207,10 +223,9 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    for edge in pattern.vertex_objects[vertex_index].surrounding_edges:    
-        if (edge): 
-            print(edge.edge_index)
-            bend_edge(edge, converted_angle, sym)
+    bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
+        
+ 
     
     pattern_dict = pattern.to_dict()
     print('fold', pattern_dict['fold_format'][0]['vertices'])
@@ -229,7 +244,6 @@ def reset_pattern():
 
     return jsonify(pattern_dict)
      
-
 
 
 if __name__ == '__main__':

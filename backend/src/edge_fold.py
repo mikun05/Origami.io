@@ -1,6 +1,51 @@
 import numpy as np
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
 
+def is_vector_in_2nd_quadrant(v):
+    """
+    When a vector is pointing into the second quadrant, 
+    the left and right faces are gotten the wrong way around
+    """
+    x, y = v[0], v[1]
+    return x < 0 and y > 0
+
+def get_direction_vector(edge_obj):
+    """
+    This gives the axis of rotation to be used in the Rodrigues Formula
+    Need to use flat format ALWAYS
+    """
+    flat_vertices = edge_obj.parent_vertex.parent_crease.flat_vertices
+    
+    [p_1, p_2] = [flat_vertices[edge_obj.edge_pointer[0]], flat_vertices[edge_obj.edge_pointer[1]]]
+    
+    non_source_vertex = p_2 if p_1 == edge_obj.original_source_vertex else p_1
+    
+    d =  np.array(edge_obj.original_source_vertex) - np.array(non_source_vertex) 
+    
+    if is_vector_in_2nd_quadrant(d):
+        d =   np.array(non_source_vertex) - np.array(edge_obj.original_source_vertex) ##if it is in the 2nd quadranyt, the direction vector is swapped such that the left and right faces are correct relative to the rest of my calculations
+    
+    d_norm = d / np.linalg.norm(d)
+    
+    print('d_norm', d_norm)
+    return d_norm
+
+
+def rodrigues_rot(vertex, edge_obj, angle):
+    n = get_direction_vector(edge_obj)
+    
+    v = np.array(vertex) - np.array(edge_obj.original_source_vertex)
+    
+    sin = np.sin(angle)
+    cos = np.cos(angle)
+
+    v_rot = ((1-cos)*(np.dot(v,n))* n)  + (cos * v) + (sin * (np.cross(n,v)))
+    
+    print('v_rot',v_rot)
+    
+    return  np.array(edge_obj.original_source_vertex) + v_rot
+
+
 def get_local_bases(edge_obj):
         """
         This takes in the edge_obj and the edge as a tuple of pointers to vertices (as in the CreasePattern)
@@ -179,6 +224,25 @@ def turn_face(face, visited_vertices, current_crease):
             new_vertex = np.array(current_crease.new_vertices[visited_face_vertex]) + original_vector_from_vistied
             
             current_crease.new_vertices[vertex] = new_vertex.tolist()
+            
+
+def turn_face_2(face, visited_vertices, current_crease, angle):
+    """
+    Method:
+    Identify visited vertex on face 
+    Use the information on the angle with whcih the folded edge was folded to "fold" all other edges 
+    """
+    visited_face_vertex = [x for x in face if x in visited_vertices][0]
+    
+    
+    for vertex in face:
+        if vertex not in visited_vertices:
+            
+            original_vector_from_vistied = np.array(current_crease.flat_vertices[vertex]) - np.array(current_crease.flat_vertices[visited_face_vertex])
+            
+            new_vertex = np.array(current_crease.new_vertices[visited_face_vertex]) + original_vector_from_vistied
+            
+            current_crease.new_vertices[vertex] = new_vertex.tolist()
     
                                         
 
@@ -247,6 +311,8 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
                     # print('turning an adjacent face')
                 
                     queue.append(neighbour_face)
+                    
+    
 
                 
                 
@@ -269,6 +335,8 @@ def bend_edge(edge_obj, angle_between_faces, sym):
     
     current_crease = edge_obj.parent_vertex.parent_crease
     
+    
+    
     ##rotate the vertices of the faces (that are not the edge ones) by the relevant angle
     ##about the e2 axis (local y axis basically to lift it out into the z (e3)plane)
     
@@ -278,7 +346,8 @@ def bend_edge(edge_obj, angle_between_faces, sym):
     for vertex in faceR + faceL:
         v = np.array(current_crease.new_vertices[vertex])
         if vertex not in edge_obj.edge_pointer:#not #in any(x != v for x in edge_obj.edge_coords):
-            vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex)
+            vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex) ##this calculates the original edge vector so that any changes in angles are relative to the flat state, not the current fold config
+            ##if user has folded by 10, and then folds by 20, this should not ersult in a fold by 30. It should merely be a fold by 20. This makes it easier to track changes
      
             
             if vertex in faceL:
@@ -290,7 +359,11 @@ def bend_edge(edge_obj, angle_between_faces, sym):
             
             current_crease.new_vertices[vertex] = new_vertex #updates the crease pattern            
 
+            current_angle_between_faces = current_crease.calculate_fold_angles(edge_obj.faceL, edge_obj.faceR, edge_obj.fold_type)
+            edge_obj.update_edge()
             
+            print('calc', current_angle_between_faces)
+            print('updated', edge_obj.curve_angle)
             
             #now bfs to update everything else to match
                 #now bfs to update everything else to match
@@ -302,7 +375,69 @@ def bend_edge(edge_obj, angle_between_faces, sym):
             bfs_on_face(faceL, edge_obj.faceR, edge_obj, queue, visited_faces, visited_edges)
 
             #we rotate all vertices of the face (that are not the edge vertices) by the required right angle along the local y axis 
+            
+def update_edges_around_vertex(vertex_obj):
+    for edge_obj in vertex_obj.surrounding_edges:
+        edge_obj.update_edge()
+        print(edge_obj.curve_angle)
 
+        
+def bend_around_vertex(vertex_obj, p_angle):
+    """
+    For a given edge, andle and sym, 
+    Bend the edge accordingly whilst ensuring that other edges aro source vertex are validly bent
+    This should work perfectly for single vertex patterns like the water bomb base, but not for those with multiple internal vertices
+    """
+    
+    print('fold_Angle', p_angle)
+    visited_edge_vertices = []
+    
+    
+    for edge_obj in vertex_obj.surrounding_edges:
+        # [[el1_unit, e2_unit, el3_unit], [er1_unit, e2_unit, er3_unit]] = get_local_bases(edge_obj)
+        
+        print('edge_angle', edge_obj.curve_angle)
+        # fold_angle = p_angle #if i == 0 else edge_obj.curve_angle - p_angle
+        # angle = (p_angle) if edge_obj.fold_type == "V" else (np.pi * 2) - (p_angle)
+        
+        # [left_angle, right_angle] = compute_bend_angle(0.5, angle)
+        
+        valley_left = (3*np.pi + p_angle) / 2
+        valley_right = (np.pi - p_angle) / 2
+        
+        right_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
+        left_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
+        
+        
+        current_crease = edge_obj.parent_vertex.parent_crease  
+        for vertex in edge_obj.faceL + edge_obj.faceR:
+            # v = np.array(current_crease.new_vertices[vertex])
+            if vertex not in edge_obj.edge_pointer and vertex not in visited_edge_vertices:#not #in any(x != v for x in edge_obj.edge_coords):
+                # vertex_vector = np.array(current_crease.new_vertices[vertex]) - np.array(edge_obj.source_vertex) ##this calculates the original edge vector so that any changes in angles are relative to the flat state, not the current fold config
+                ##if user has folded by 10, and then folds by 20, this should not ersult in a fold by 30. It should merely be a fold by 20. This makes it easier to track changes
+        
+                # new_vector = alt_rotate_local_xy_to_xz(vertex_vector, el1_unit, e2_unit, el3_unit, -left_angle)
+                    
+                # new_vertex = (edge_obj.source_vertex + new_vector).tolist()
+                
+                if vertex in edge_obj.faceL:
+                    current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, left_angle)).tolist() # new_vertex #updates the crease pattern  
+                else:
+                    current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, right_angle)).tolist() # new_vertex #updates the crease pattern  
+                
+                # current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.new_vertices[vertex]), edge_obj, np.pi - left_angle)).tolist() # new_vertex #updates the crease pattern  
+                
+                # print('rod', rodrigues_rot(np.array(current_crease.new_vertices[vertex]), edge_obj, np.pi - left_angle))
+                visited_edge_vertices.append(vertex)   
+        
+        print('visited_edge_vertices', visited_edge_vertices)
+        update_edges_around_vertex(vertex_obj)
+        
+        
+
+
+        
+    
 
     
     

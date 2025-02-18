@@ -1,7 +1,7 @@
 export const VertexColor = {
     Default: [0, 0, 0],
-    Hovered: [0, 0.5, 0.5],
-    Clicked: [0, 0 , 0],
+    Hovered: [1, 0.8, 0],
+    Clicked: [1, 0.1 , 0],
     Violated: [1, 0, 0]
 } 
 
