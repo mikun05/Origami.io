@@ -20,10 +20,10 @@ def get_direction_vector(edge_obj):
     
     non_source_vertex = p_2 if p_1 == edge_obj.original_source_vertex else p_1
     
-    d =  np.array(edge_obj.original_source_vertex) - np.array(non_source_vertex) 
+    d =  np.array(non_source_vertex) -  np.array(edge_obj.original_source_vertex) 
     
-    if is_vector_in_2nd_quadrant(d):
-        d =   np.array(non_source_vertex) - np.array(edge_obj.original_source_vertex) ##if it is in the 2nd quadranyt, the direction vector is swapped such that the left and right faces are correct relative to the rest of my calculations
+    # if is_vector_in_2nd_quadrant(d):
+    #     d =   np.array(non_source_vertex) - np.array(edge_obj.original_source_vertex) ##if it is in the 2nd quadranyt, the direction vector is swapped such that the left and right faces are correct relative to the rest of my calculations
     
     d_norm = d / np.linalg.norm(d)
     
@@ -34,7 +34,8 @@ def get_direction_vector(edge_obj):
 def rodrigues_rot(vertex, edge_obj, angle):
     n = get_direction_vector(edge_obj)
     
-    v = np.array(vertex) - np.array(edge_obj.original_source_vertex)
+    v =  np.array(vertex) - np.array(edge_obj.original_source_vertex) 
+    
     
     sin = np.sin(angle)
     cos = np.cos(angle)
@@ -402,8 +403,8 @@ def bend_around_vertex(vertex_obj, p_angle):
         valley_left = (3*np.pi + p_angle) / 2
         valley_right = (np.pi - p_angle) / 2
         
-        right_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
-        left_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
+        right_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
+        left_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
         
         
         current_crease = edge_obj.parent_vertex.parent_crease  

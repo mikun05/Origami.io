@@ -527,9 +527,11 @@ class SmoothFoldPatternEdge:
         self.source_vertex = source_vertex
         self.edge_coords = edge_coords
         self.original_edge_coords = edge_coords
+        self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
+
+        self.direction_vector = self.calculate_direction_vector()
         
 
-        self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
         self.edge_vector = edge_vector #m_jk
         self.curve_strength = curve_strength
         self.flat_width = flat_w ##initalised width across edge when flat but this can change as adjacent faces move 
@@ -537,7 +539,7 @@ class SmoothFoldPatternEdge:
         self.fold_type = fold_type
         self.curve_angle = curve_angle
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
-        [self.faceL, self.faceR] = [faceA, faceB]
+        [self.faceL, self.faceR] = self.get_right_left_face(faceA, faceB)
         
         
     def to_dict(self):
@@ -554,6 +556,45 @@ class SmoothFoldPatternEdge:
             "faceR": self.faceR,
             "fold_type": self.fold_type
         }
+        
+    def calculate_direction_vector(self):
+        """
+        This gives the axis of rotation to be used in the Rodrigues Formula
+        Need to use flat format ALWAYS
+        """
+        flat_vertices = self.parent_vertex.parent_crease.flat_vertices
+        
+        [p_1, p_2] = [flat_vertices[self.edge_pointer[0]], flat_vertices[self.edge_pointer[1]]]
+        
+        non_source_vertex = p_2 if p_1 == self.original_source_vertex else p_1
+        
+        d =  np.array(non_source_vertex) -  np.array(self.original_source_vertex) 
+        
+        # if is_vector_in_2nd_quadrant(d):
+        #     d =   np.array(non_source_vertex) - np.array(edge_obj.original_source_vertex) ##if it is in the 2nd quadranyt, the direction vector is swapped such that the left and right faces are correct relative to the rest of my calculations
+        
+        d_norm = d / np.linalg.norm(d)
+        
+        return d_norm
+    
+    def get_right_left_face(self, faceA, faceB):
+        """
+        This returns the left and right face RELATIVE to the direction ruling.
+        """
+        
+        def two_d_cross(d, v):
+            return (d[0] * v[1] - d[1] * v[0])
+        
+        flat_vertices = self.parent_vertex.parent_crease.flat_vertices
+        
+        for vertex_index in faceA:
+            vector_from_source =  np.array(flat_vertices[vertex_index]) - np.array(self.original_source_vertex )
+            if two_d_cross(vector_from_source, self.direction_vector) > 0:
+                return([faceA, faceB])
+            elif two_d_cross(vector_from_source, self.direction_vector) < 0:
+                return([faceB, faceA])
+                
+            
         
     def width_after_curve(self, theta):
         curve_segment_1 = (1 - self.curve_strength) * self.flat_width
