@@ -286,7 +286,7 @@ class SmoothFoldPatternVertex:
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
         # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
-        self.surrounding_angles = self.get_angles_surrounding_vertex(vertex) ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
+        self.surrounding_angles = self.get_angles_surrounding_vertex() ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
         #self.enclosing_path = self.compute_simple_closed_path()
         
     def to_dict(self):
@@ -309,19 +309,17 @@ class SmoothFoldPatternVertex:
         edge_pointers = self.parent_crease.get_edges_surrounding_vertex(vertex) #each edge in the from (u,v)
         # print(edge_pointers)
         unordered_edge = []
-        
+        count_edges = 0
+
         
         ##make it a dict with key j,k
         
         for (k, edge_pointer) in enumerate(edge_pointers): #edge pointers
             i = self.parent_crease.edges.index(edge_pointer) ##to get correct edge assignment
 
-
             if self.parent_crease.edges_assignments[i] != 'B': ##excludes boundary edges and vertices
             
                 # print(edge_pointer, 'not boundary')
-
-            
 
                 [faceA, faceB] = self.parent_crease.get_faces_surrounding_edge(edge_pointer)
 
@@ -329,25 +327,35 @@ class SmoothFoldPatternVertex:
                 ##if input is a flat crease pattern, theta is ALWAYS 0
                 edge = self.parent_crease.convert_to_actual_coords(edge_pointer)
                 
-                edge_vector = np.array(edge[1]) - np.array(edge[0]) #edge vector = v - u
-                [e_x, e_y, e_z] = np.array(edge_vector) - np.array(vertex)
+                ##determines counterclockwise angle of edge from source vertex
+                if np.allclose(edge[0], vertex):
+                    vec = np.array(edge[1]) - np.array(vertex)
+                else:
+                    vec = np.array(edge[0]) - np.array(vertex)
                 
-                angle_from_vertex = np.arctan2(e_y, e_x)
+                # Compute the angle wrt horizontal axis of point
+                ang = np.arctan2(vec[1], vec[0])
+                
+                if ang < 0: ##convert neg angles to >180 angles
+                    ang += 2 * np.pi
+                
+                
                 
                 pos_in_crease = self.parent_crease.edges.index(edge_pointer)
+    
                 
-                
-                edge_obj = SmoothFoldPatternEdge(self, index, k, pos_in_crease, edge, edge_pointer, vertex, edge_vector, 
+                edge_obj = SmoothFoldPatternEdge(self, index, k, pos_in_crease, edge, edge_pointer, vertex, vec, 
                                                 self.parent_crease.fold_width, 
                                                 self.parent_crease.curve_strength, 
                                                 self.parent_crease.edges_assignments[i], 
-                                                theta_jk, angle_from_vertex, faceA, faceB)
+                                                theta_jk, ang, faceA, faceB)
                 ##Things that will be subject to change when bending are fold_width, curve strength, theta angle .. by intervention
                 ##edge_vector and edge will also change as a consquence of the above
                 
                 unordered_edge.append({'edge_obj': edge_obj,
-                                    'angle': angle_from_vertex ##this is phi(mjk). It is the cummulative angle
+                                    'angle': np.degrees(ang) #angle_from_vertex ##this is phi(mjk). It is the cummulative angle
                                     })
+                
             
         def sort_according_to_angle(edge):
             #print(edge['angle'])
@@ -357,6 +365,11 @@ class SmoothFoldPatternVertex:
 
         sorted_edges = [x['edge_obj'] for x in sorted(unordered_edge, key=lambda x: sort_according_to_angle(x))]
         ##should return a list of edge_objects. in order of k
+        
+        for edge_obj in sorted_edges:
+            edge_obj.id[1] = count_edges
+            count_edges += 1
+
         return(sorted_edges)
                 
     def get_face_between_edges(self, edge_1, edge_2):
@@ -384,7 +397,7 @@ class SmoothFoldPatternVertex:
         
     #     return faces
     
-    def get_angles_surrounding_vertex(self, vertex):
+    def get_angles_surrounding_vertex(self):
         """
         Gets the angles surrounding vertex where angle_ij is the angle between self.surrounding_edges[i] and self.surrounding_edges[j] if the two edges are adjacent
         Could do a running total type thing. 
@@ -397,7 +410,6 @@ class SmoothFoldPatternVertex:
         if number_of_edges == 0:
             return []
         else:
-        
             angles = []
             sum_of_angles = 0
             
@@ -521,7 +533,7 @@ class SmoothFoldPatternEdge:
         Set up smooth fold pattern as a set of smoothFoldPatternVertex
         """
         self.parent_vertex = parent_vertex
-        self.id = (j,k) #meaning edge k of vertex j
+        self.id = [j,k] #meaning edge k of vertex j
         self.edge_index = edge_index #position in crease pattern edges
         self.original_source_vertex = source_vertex
         self.source_vertex = source_vertex

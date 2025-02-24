@@ -1,6 +1,6 @@
 import numpy as np
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
-
+from constraints import *
 
 def get_direction_vector(edge_obj):
     """
@@ -343,6 +343,7 @@ def update_edges_around_vertex(vertex_obj):
         edge_obj.update_edge()
         print(edge_obj.curve_angle)
         
+        
 def bend_around_vertex(vertex_obj, p_angle):
     """
     For a given edge, andle and sym, 
@@ -359,7 +360,6 @@ def bend_around_vertex(vertex_obj, p_angle):
         
         print('edge_angle', edge_obj.curve_angle)
 
-        
         valley_left = (3*np.pi + p_angle) / 2
         valley_right = (np.pi - p_angle) / 2
         
@@ -382,13 +382,12 @@ def bend_around_vertex(vertex_obj, p_angle):
         print('visited_edge_vertices', visited_edge_vertices)
         update_edges_around_vertex(vertex_obj)
         
+    
+    if (tachi_constraints_vertex_level(vertex_obj, p_angle)):
+        print("#####THIS IS A VALID FOLD CONFIG")
+    else:
+        print("XXXXXTHIS IS NOT A VALID FOLD CONFIG")
+        
         
 
 
-        
-    
-
-    
-    
-    
-        

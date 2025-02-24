@@ -7,6 +7,7 @@ import { EdgeColor, VertexColor, VertexSizes } from './PatternViewerStates';
 import { PointMaterial } from '@react-three/drei'
 import { useThree } from '@react-three/fiber';
 import { PatternContext } from '../contexts/patternContext';
+import { Earcut } from 'three/src/extras/Earcut.js'
 
 //how much code, language, commits and so on
 const CameraSetUp = (props) => {
@@ -114,70 +115,7 @@ const CameraSetUp = (props) => {
       }, [camera, gl, isDragging]);
 
 
-
-    // useEffect(() => {
-    //     if (!pointsRef.current) return;
-        
-    //     const handleRightClickDown = (event) => {
-    //         if (event.button !== 2) return;
-    //         console.log('rot downn')
-    //         setIsRotating(true);
-    //         lastPointer.current = {
-    //             x: event.clientX,
-    //             y: event.clientY,
-    //             pressure: event.pressure, // Initial pressure
-    //           }        };
-
-
-    //     const handleMouseMove = (event) => {
-    //         if (!isRotating || event.pressure === 0) return; // Prevent unwanted movements when pressure is 0            console.log('draggg')
-        
-    //         const deltaX = event.clientX - lastPointer.current.x;
-    //         const deltaY = event.clientY - lastPointer.current.y;
-    //         const pressureFactor = event.pressure || 1; // Default to 1 if no pressure sensor
-
-    //         lastPointer.current = {
-    //             x: event.clientX,
-    //             y: event.clientY,
-    //             pressure: event.pressure,
-    //         };
-
-    //         const rotationSpeed = 0.005 ; // Adjust spee
-        
-    //         setYaw((prevYaw) => prevYaw - deltaX * rotationSpeed);
-    //         setPitch((prevPitch) => Math.min(Math.max(prevPitch - deltaY * rotationSpeed, -Math.PI / 2), Math.PI / 2));
-    //         // camera.lookAt(0, 0, 0)
-        
-    //     }
-
-    //     const handleRightClickUp = (event) => {
-    //         if (event.button !== 2) return;
-    //         console.log('rot uppp')
-    //         setIsRotating(false);
-    //     };
-
-    //     const x = 10 * Math.cos(pitch) * Math.sin(yaw);
-    //     const y = 10 * Math.sin(pitch);
-    //     const z = 10 * Math.cos(pitch) * Math.cos(yaw);
-
-    //     camera.position.set(x, y, z);
-
-        
-    //     const disableContextMenu = (event) => event.preventDefault();
-
-    //     gl.domElement.addEventListener("mousedown", handleRightClickDown);
-    //     gl.domElement.addEventListener("mousemove", handleMouseMove);
-    //     gl.domElement.addEventListener("mouseup", handleRightClickUp);
-    //     gl.domElement.addEventListener("contextmenu", disableContextMenu);
-    
-    //     return () => {
-    //       gl.domElement.removeEventListener("mousedown", handleRightClickDown);
-    //       gl.domElement.removeEventListener("mousemove", handleMouseMove);
-    //       gl.domElement.removeEventListener("mouseup", handleRightClickUp);
-    //       gl.domElement.removeEventListener("contextmenu", disableContextMenu);
-    //     };
-    //   }, [camera, gl, isRotating, yaw, pitch]);
-}
+    }
 
 const RotateObject = ({pivot, children}) => {
     const groupRef = useRef();
@@ -267,6 +205,7 @@ const PatternViewer = (props) => {
     const edge_assignments = props.pattern['fold_format'][0]['edges_assignments']
     const faces = new Uint16Array(props.pattern['fold_format'][0]['faces'].flat())
 
+
     const pointsRef = useRef();
     const linesRef = useRef();
 
@@ -292,6 +231,21 @@ const PatternViewer = (props) => {
 
     const edge_colors = new Float32Array(edges.length * 3 );
     const edge_vertices = new Float32Array(edges.length * 3);
+    const top_face_colors =  new Float32Array(edges.length * 3);
+    const bottom_face_colors =  new Float32Array(edges.length * 3);
+
+
+    for (let i = 0; i < vertices.length * 3; i += 3) {
+        for (let j = 0; j < 3; j++) {
+            top_face_colors[i] = 0.8
+            top_face_colors[i+1] = 0
+            top_face_colors[i+2] = 0.2
+
+            bottom_face_colors[i] = 0
+            bottom_face_colors[i+1] = 0
+            bottom_face_colors[i+2] = 0
+        }
+      }
 
 
 
@@ -519,17 +473,19 @@ const PatternViewer = (props) => {
                 <mesh>
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
+                        <bufferAttribute attach="attributes-color" args={[top_face_colors, 3]} />
                         <bufferAttribute attach="index" args={[faces, 1]} />
                     </bufferGeometry>
-                    <meshBasicMaterial color="white" wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
+                    <meshBasicMaterial color={'red'} wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
                 </mesh>
 
                 <mesh> 
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
+                        <bufferAttribute attach="attributes-color" args={[bottom_face_colors, 3]} />
                         <bufferAttribute attach="index" args={[faces, 1]} />
                     </bufferGeometry>
-                    <meshBasicMaterial color="darkOrange" wireframe={false} side={THREE.BackSide}/>
+                    <meshBasicMaterial color={'white'} wireframe={false} side={THREE.BackSide}/>
                 </mesh>
             </RotateObject>
         </>

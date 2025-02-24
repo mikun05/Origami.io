@@ -162,7 +162,7 @@ twist ={
     ]
 }
 
-example_fold_data = water_bomb_base_fold_data
+example_fold_data = book_fold
 
 pattern = SmoothFoldPattern(example_fold_data)
 
