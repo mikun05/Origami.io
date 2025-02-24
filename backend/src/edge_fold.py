@@ -16,7 +16,7 @@ def get_direction_vector(edge_obj):
     d =  np.array(non_source_vertex) -  np.array(edge_obj.original_source_vertex) 
     d_norm = d / np.linalg.norm(d)
     
-    print('d_norm', d_norm)
+    #print('d_norm', d_norm)
     return d_norm
 
 
@@ -30,9 +30,53 @@ def rodrigues_rot(vertex, edge_obj, angle):
 
     v_rot = ((1-cos)*(np.dot(v,n))* n)  + (cos * v) + (sin * (np.cross(n,v)))
     
-    print('v_rot',v_rot)
+    #print('v_rot',v_rot)
     
     return  np.array(edge_obj.original_source_vertex) + v_rot
+
+
+def rodrigues_rotation_matrix(edge_obj, angle):
+    [k1, k2, k3] = get_direction_vector(edge_obj)
+    
+    K = np.array([[0,-k3, k2],
+                  [k3, 0, -k1],
+                  [-k2, k1, 0]])
+    
+    sin = np.sin(angle)
+    cos = np.cos(angle)
+
+    R = np.eye(3) + (sin * K) + ((1-cos) * np.dot(K, K))    
+    
+    return R
+
+def compute_transformations(vertex_obj, angle):
+
+    surrounding_faces = vertex_obj.surrounding_faces
+    n = len(surrounding_faces)
+    
+    transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
+    transforms[0] = np.eye(3)  #face 0 remains unrotated.
+    
+    for i in range(1,n):
+        right_edge_obj = vertex_obj.surrounding_edges[i]
+        ##for each face, we move according to the angle assigned to the edge on its right.
+        
+        # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
+
+        ang = (np.pi - angle) if  right_edge_obj.fold_type == "V" else angle - np.pi
+
+        #crease between face (i-1) and face i:
+        # R1 = rodrigues_rotation_matrix(left_edge_obj, angle_from_left_edge)
+        R = rodrigues_rotation_matrix(right_edge_obj, ang)
+
+        
+        #transformation for face i is the cumulative rotation.
+        #print('Y1', np.dot(transforms[i-1], R)) ##based on how the angle changes based on previous rotations
+        # #print('Y2', np.dot(np.dot(transforms[i-1], R1), R2))
+
+        transforms[i] = np.dot(transforms[i-1], R)
+        
+    return transforms
 
 
 def get_local_bases(edge_obj):
@@ -150,7 +194,7 @@ def alt_rotate_local_xy_to_xz(v, e1, e2, e3, theta):
 
 def get_edges_of_face(face, edge_vertices):
     face_vertex_pairs = [[a, b] for i, a in enumerate(face) for b in face[i + 1:]]
-    # print('face_vertex_pairs', face_vertex_pairs)
+    # #print('face_vertex_pairs', face_vertex_pairs)
     edges_of_face = []
     
     for [a,b] in face_vertex_pairs:
@@ -158,7 +202,7 @@ def get_edges_of_face(face, edge_vertices):
             edges_of_face.append([a,b])
         elif [b,a] in edge_vertices:
             edges_of_face.append([b,a])
-    # print('edges_of_face', edges_of_face)
+    # #print('edges_of_face', edges_of_face)
     return(edges_of_face)
 
 def get_adjacent_faces(face, edge_vertices, face_vertices, edge_assignment):
@@ -231,7 +275,7 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
     ##for all pairs of vertices in face that are edges, but not boundary edges,
     ##collect all other faces that have those vertices (taking care to always exclude the face opposite the fold if it appears)
     ##also taking care to not revist faces
-    # print(face)
+    # #print(face)
     source = face 
     queue = queue
     visited_faces = visited_faces
@@ -242,9 +286,9 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
     
                     
     visited_faces = visited_faces + [source]
-    # print('v', visited_faces)
+    # #print('v', visited_faces)
     visited_vertices = [vertex for face in visited_faces for vertex in face]
-    # print('h', crease_data.edges)
+    # #print('h', crease_data.edges)
     visited_edges = visited_edges + get_edges_of_face(face, crease_data.edges)
     
     
@@ -253,7 +297,7 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
     
     
     while queue:
-        #print('quq', queue)
+        ##print('quq', queue)
 
         face = queue.pop(0)
         if face != face_opposite_fold and face not in visited_faces:
@@ -273,7 +317,7 @@ def bfs_on_face(face, face_opposite_fold, edge_obj, queue, visited_faces, visite
                 # if neighbour_face != face_opposite_fold and neighbour_face not in visited_faces:
                     #to turn the face, we need the edges and vertices shared by the source 
                     ##and we want the same relative edge vectors to hold
-                    # print('turning an adjacent face')
+                    # #print('turning an adjacent face')
                 
                     queue.append(neighbour_face)
                     
@@ -303,6 +347,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
     faceR = [] if sym == 0 else edge_obj.faceR
     faceL = [] if sym == 1 else edge_obj.faceL
     
+    
     for vertex in faceR + faceL:
         v = np.array(current_crease.new_vertices[vertex])
         if vertex not in edge_obj.edge_pointer:#not #in any(x != v for x in edge_obj.edge_coords):
@@ -322,8 +367,8 @@ def bend_edge(edge_obj, angle_between_faces, sym):
             current_angle_between_faces = current_crease.calculate_fold_angles(edge_obj.faceL, edge_obj.faceR, edge_obj.fold_type)
             edge_obj.update_edge()
             
-            print('calc', current_angle_between_faces)
-            print('updated', edge_obj.curve_angle)
+            #print('calc', current_angle_between_faces)
+            #print('updated', edge_obj.curve_angle)
             
             #now bfs to update everything else to match
                 #now bfs to update everything else to match
@@ -341,7 +386,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
 def update_edges_around_vertex(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         edge_obj.update_edge()
-        print(edge_obj.curve_angle)
+        #print(edge_obj.curve_angle)
         
         
 def bend_around_vertex(vertex_obj, p_angle):
@@ -352,35 +397,58 @@ def bend_around_vertex(vertex_obj, p_angle):
     Currently this version works for a singular crease, past this previous folds are tampered with when folding others around the vertex
     """
     
-    print('fold_Angle', p_angle)
+    #print('fold_Angle', p_angle)
     visited_edge_vertices = []
     
+    current_crease = vertex_obj.parent_crease  
+
+    # for edge_obj in vertex_obj.surrounding_edges:
+
+        
+    # #print('edge_angle', edge_obj.curve_angle)
+
+    # valley_left = (3*np.pi + p_angle) / 2
+    # valley_right = (np.pi - p_angle) / 2
     
-    for edge_obj in vertex_obj.surrounding_edges:
+    # right_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
+    # left_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
+    
+    
+    transforms = compute_transformations(vertex_obj, p_angle)
+    
+    new_vertices = [None] * len(current_crease.new_vertices)
+    for (i, face) in enumerate(vertex_obj.surrounding_faces):
+        T = transforms.get(i)
+        print(i)
+        print('face', face)
         
-        print('edge_angle', edge_obj.curve_angle)
+        #print('Y',i, T)
+        
+        for v in face:
+            print('v', i, v)
+            # #print('New',  np.dot(T, np.array(current_crease.flat_vertices[v])))
+            print('T', T)
+            new_vertices[v] = np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()
+    
+    current_crease.new_vertices = new_vertices
+    
+    update_edges_around_vertex(vertex_obj)
+                
+        
+        # current_crease = edge_obj.parent_vertex.parent_crease  
+        # for vertex in edge_obj.faceL + edge_obj.faceR:
+        #     if vertex not in edge_obj.edge_pointer and vertex not in visited_edge_vertices:#not #in any(x != v for x in edge_obj.edge_coords):
 
-        valley_left = (3*np.pi + p_angle) / 2
-        valley_right = (np.pi - p_angle) / 2
-        
-        right_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
-        left_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
-        
-        
-        current_crease = edge_obj.parent_vertex.parent_crease  
-        for vertex in edge_obj.faceL + edge_obj.faceR:
-            if vertex not in edge_obj.edge_pointer and vertex not in visited_edge_vertices:#not #in any(x != v for x in edge_obj.edge_coords):
-
-                if vertex in edge_obj.faceL:
-                    current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, left_angle)).tolist() # new_vertex #updates the crease pattern  
-                else:
-                    current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, right_angle)).tolist() # new_vertex #updates the crease pattern  
+        #         if vertex in edge_obj.faceL:
+        #             current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, left_angle)).tolist() # new_vertex #updates the crease pattern  
+        #         else:
+        #             current_crease.new_vertices[vertex] = (rodrigues_rot(np.array(current_crease.flat_vertices[vertex]), edge_obj, right_angle)).tolist() # new_vertex #updates the crease pattern  
                 
                
-                visited_edge_vertices.append(vertex)   
+        #         visited_edge_vertices.append(vertex)   
         
-        print('visited_edge_vertices', visited_edge_vertices)
-        update_edges_around_vertex(vertex_obj)
+        # #print('visited_edge_vertices', visited_edge_vertices)
+        # update_edges_around_vertex(vertex_obj)
         
     
     if (tachi_constraints_vertex_level(vertex_obj, p_angle)):

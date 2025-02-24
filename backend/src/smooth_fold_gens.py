@@ -285,7 +285,7 @@ class SmoothFoldPatternVertex:
         self.original_vertex = vertex
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
-        # self.surrounding_faces = self.get_faces_surrounding_vertex(vertex, index) ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
+        self.surrounding_faces = self.get_faces_surrounding_vertex() ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
         self.surrounding_angles = self.get_angles_surrounding_vertex() ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
         #self.enclosing_path = self.compute_simple_closed_path()
         
@@ -377,25 +377,31 @@ class SmoothFoldPatternVertex:
         if adj:
             return(shared)
             
-    # def get_faces_surrounding_vertex(self):
-    #     """
-    #     Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
-    #     Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
-    #     So we know that adjacent edges on the graph are adjacent in the list, with edges 1 to k then, 
-    #     Faces around the vertex are F_{i, i+1} until i = k, then we have the final face F_{i=k,0}
-    #     This gives me the faces in counter clockwise order
-    #     """
+    def get_faces_surrounding_vertex(self):
+        """
+        Gets the faces surrounding vertex where face_ij is the face between self.surrounding_edges[i] and self.surrounding_edges[j] if they do share an edge
+        Done by iterating through the edges surrounding the vertex (that are now ordered counterclockwise)
+        So we know that adjacent edges on the graph are adjacent in the list, with edges 1 to k then, 
+        Faces around the vertex are F_{i, i+1} until i = k, then we have the final face F_{i=k,0}
+        This gives me the faces in counter clockwise order
+        """
         
-    #     number_of_edges = len(self.surrounding_edges)
         
-    #     faces = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
+        surround = []
         
-    #     for i in range(number_of_edges-1):
-    #         faces.update({(i, i+1): self.get_face_between_edges(self.surrounding_edges[i].edge, self.surrounding_edges[i+1].edge )})
+        for edge_obj in self.surrounding_edges:
+            surround.append(edge_obj.faceR)
+        
+        # number_of_edges = len(self.surrounding_edges)
+        
+        # faces = {} #a dict where key (i,j) has face f_ij between edges e_i, e_j, which are self.surrounding_edges[i].edges,  self.surrounding_edges[j].edges resp.
+        
+        # for i in range(number_of_edges-1):
+        #     faces.update({(i, i+1): self.get_face_between_edges(self.surrounding_edges[i].edge, self.surrounding_edges[i+1].edge )})
             
-    #     faces.update({(number_of_edges-1, 0): self.get_face_between_edges(self.surrounding_edges[-1].edge, self.surrounding_edges[0].edge )})
-        
-    #     return faces
+        # faces.update({(number_of_edges-1, 0): self.get_face_between_edges(self.surrounding_edges[-1].edge, self.surrounding_edges[0].edge )})
+ 
+        return surround
     
     def get_angles_surrounding_vertex(self):
         """
@@ -535,8 +541,8 @@ class SmoothFoldPatternEdge:
         self.parent_vertex = parent_vertex
         self.id = [j,k] #meaning edge k of vertex j
         self.edge_index = edge_index #position in crease pattern edges
-        self.original_source_vertex = source_vertex
-        self.source_vertex = source_vertex
+        self.original_source_vertex = parent_vertex.parent_crease.flat_vertices[j]
+        self.source_vertex = parent_vertex.parent_crease.new_vertices[j]
         self.edge_coords = edge_coords
         self.original_edge_coords = edge_coords
         self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
@@ -622,6 +628,8 @@ class SmoothFoldPatternEdge:
         edge_coords = [self.parent_vertex.parent_crease.new_vertices[self.edge_pointer[0]], self.parent_vertex.parent_crease.new_vertices[self.edge_pointer[1]]]
         self.curve_angle = angle
         self.edge_coords = edge_coords
+        self.original_source_vertex = self.parent_vertex.parent_crease.flat_vertices[self.id[0]]
+        self.source_vertex = self.parent_vertex.parent_crease.new_vertices[self.id[0]]
 
         ##update the rest
         #moev the edge and edeg vector accordingly 

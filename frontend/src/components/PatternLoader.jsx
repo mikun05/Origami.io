@@ -18,7 +18,10 @@ const FoldVertexDialogue = (props) => {
 
     useEffect(() => {
         if (!pattern) return
-        setVertexPoint(pattern['fold_format'][0]['vertices'][focusedVertexIndex])
+        console.log('pattern')
+        console.log(pattern['fold_format'])
+        console.log(focusedVertexIndex)
+        setVertexPoint(pattern['fold_format'][0]['vertices'][focusedVertexIndex] ?? [])
     }, [pattern, focusedVertexIndex])
 
     const handleFoldEdge = (e) => {
@@ -45,6 +48,7 @@ const FoldVertexDialogue = (props) => {
             <label>
             Uniform Fold around <br></br><br></br>
             <div style={{display: 'flex', flexDirection: 'row', gap: '1rem'}}>
+            <div>{focusedVertexIndex}.</div>
             <div>x: {Math.round(vertexPoint[0] * 100) / 100} </div>
             <div>y: {Math.round(vertexPoint[1] * 100) / 100} </div>
             <div>z: {Math.round(vertexPoint[2] * 100) / 100} </div>
