@@ -603,6 +603,10 @@ class SmoothFoldPatternEdge:
         def two_d_cross(d, v):
             return (d[0] * v[1] - d[1] * v[0])
         
+        print('num', self.id)
+        print('a', faceA)
+        print('b', faceB)
+        
         flat_vertices = self.parent_vertex.parent_crease.flat_vertices
         
         for vertex_index in faceA:
