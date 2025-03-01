@@ -396,38 +396,16 @@ def bend_around_vertex(vertex_obj, p_angle):
     This should work perfectly for single vertex patterns like the water bomb base, but not for those with multiple internal vertices
     Currently this version works for a singular crease, past this previous folds are tampered with when folding others around the vertex
     """
-    
-    ##print('fold_Angle', p_angle)
-    visited_edge_vertices = []
-    
+
     current_crease = vertex_obj.parent_crease  
 
-    # for edge_obj in vertex_obj.surrounding_edges:
-
-        
-    # ##print('edge_angle', edge_obj.curve_angle)
-
-    # valley_left = (3*np.pi + p_angle) / 2
-    # valley_right = (np.pi - p_angle) / 2
-    
-    # right_angle = valley_right if edge_obj.fold_type == "V" else -valley_right
-    # left_angle = -valley_right if edge_obj.fold_type == "V" else valley_right
-    
-    
     transforms = compute_transformations(vertex_obj, p_angle)
     
     new_vertices = [None] * len(current_crease.new_vertices)
     for (i, face) in enumerate(vertex_obj.surrounding_faces):
         T = transforms.get(i)
-        #print(i)
-        #print('face', face)
-        
-        ##print('Y',i, T)
-        
+
         for v in face:
-            #print('v', i, v)
-            # ##print('New',  np.dot(T, np.array(current_crease.flat_vertices[v])))
-            #print('T', T)
             new_vertices[v] = np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()
     
     current_crease.new_vertices = new_vertices

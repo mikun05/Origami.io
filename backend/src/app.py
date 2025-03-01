@@ -182,7 +182,7 @@ two_miura_ori_fold = {
 
 
 
-example_fold_data = two_miura_ori_fold
+example_fold_data = water_bomb_base_fold_data
 
 pattern = SmoothFoldPattern(example_fold_data)
 
