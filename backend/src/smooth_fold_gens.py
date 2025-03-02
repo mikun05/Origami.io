@@ -390,7 +390,7 @@ class SmoothFoldPatternVertex:
         surround = []
         
         for edge_obj in self.surrounding_edges:
-            surround.append(edge_obj.faceR)
+            surround.append(edge_obj.faceL)
         
         # number_of_edges = len(self.surrounding_edges)
         
@@ -557,7 +557,7 @@ class SmoothFoldPatternEdge:
         self.fold_type = fold_type
         self.curve_angle = curve_angle
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
-        [self.faceL, self.faceR] = self.get_right_left_face(faceA, faceB)
+        [self.faceR, self.faceL] = self.get_right_left_face(faceA, faceB)
         
         
     def to_dict(self):

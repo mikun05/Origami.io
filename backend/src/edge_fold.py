@@ -63,7 +63,8 @@ def compute_transformations(vertex_obj, angle):
         
         # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
 
-        ang = (np.pi - angle) if  right_edge_obj.fold_type == "V" else angle - np.pi
+        ang = angle +np.pi if  right_edge_obj.fold_type == "V" else np.pi - angle
+        print('ang', ang)
 
         #crease between face (i-1) and face i:
         # R1 = rodrigues_rotation_matrix(left_edge_obj, angle_from_left_edge)
@@ -74,7 +75,10 @@ def compute_transformations(vertex_obj, angle):
         ##print('Y1', np.dot(transforms[i-1], R)) ##based on how the angle changes based on previous rotations
         # ##print('Y2', np.dot(np.dot(transforms[i-1], R1), R2))
 
+        print('raw', R)
         transforms[i] = np.dot(transforms[i-1], R)
+        print('USED', transforms[i])
+
         
     return transforms
 
@@ -403,6 +407,7 @@ def bend_around_vertex(vertex_obj, p_angle):
     
     new_vertices = [None] * len(current_crease.new_vertices)
     for (i, face) in enumerate(vertex_obj.surrounding_faces):
+        print('face', face)
         T = transforms.get(i)
 
         for v in face:

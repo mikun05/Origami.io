@@ -76,6 +76,9 @@ const FoldEdgeDialogue = (props) => {
     const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern } = useContext(PatternContext)
     const [currentAngle, setCurrentAngle] = useState(180)
     const [foldType, setFoldType] = useState('B')
+    const [relativeEdgeIndex, setRelativeEdgeIndex] = useState(0)
+
+
 
     useEffect(() => {
         if (focusedVertexIndex === undefined || focusedVertexIndex === null || focusedEdgeIndex === undefined || focusedEdgeIndex === null) return;
@@ -89,6 +92,7 @@ const FoldEdgeDialogue = (props) => {
             console.log('angle', response.data['angle'])
             setCurrentAngle( Math.round(response.data['angle'] * (180/Math.PI) * 100) / 100);
             setFoldType(response.data['fold_type'])
+            setRelativeEdgeIndex(response.data['id'][1])
         })
         .catch(error => console.error("Error fetching angle data:", error));
     }, [focusedEdgeIndex, focusedVertexIndex])
@@ -123,7 +127,7 @@ const FoldEdgeDialogue = (props) => {
     return(
         <form method="post" onSubmit={handleFoldEdge}>
             <label>
-            Fold around {foldType == 'M' ? 'Mountain' : 'Valley'} edge by: <br></br>
+            Fold around {foldType == 'M' ? 'Mountain' : 'Valley'} edge {relativeEdgeIndex} by: <br></br>
             Angle: <input name="foldEdge" type="number" value={currentAngle} onChange={handleAngleChange} min="0" max="180" required style={{width: '3rem'}}/>°
             <br></br>
             Sym: <input name="foldSym" type="number" defaultValue={0.5} step="0.1" min="0" max="1" required style={{width: '2.5rem'}}/>
