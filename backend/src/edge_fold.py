@@ -49,21 +49,24 @@ def rodrigues_rotation_matrix(edge_obj, angle):
     
     return R
 
-def compute_transformations(vertex_obj, angle):
+def compute_transformations(vertex_obj, angle, start_edge):
 
     surrounding_faces = vertex_obj.surrounding_faces
     n = len(surrounding_faces)
     
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
-    transforms[0] = np.eye(3)  #face 0 remains unrotated.
+    transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
     
-    for i in range(1,n):
+    for i_count in range(1,n):
+        i = (start_edge + i_count) % (n)
         right_edge_obj = vertex_obj.surrounding_edges[i]
         ##for each face, we move according to the angle assigned to the edge on its right.
         
         # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
-
-        ang = angle +np.pi if  right_edge_obj.fold_type == "V" else np.pi - angle
+        print('angles', angle)
+        fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
+        print(fold_angle)
+        ang = fold_angle +np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
         print('ang', ang)
 
         #crease between face (i-1) and face i:
@@ -76,7 +79,7 @@ def compute_transformations(vertex_obj, angle):
         # ##print('Y2', np.dot(np.dot(transforms[i-1], R1), R2))
 
         print('raw', R)
-        transforms[i] = np.dot(transforms[i-1], R)
+        transforms[i] = np.dot(transforms[i-1], R) if i != 0 else np.dot(transforms[n-1], R)
         print('USED', transforms[i])
 
         
@@ -393,7 +396,7 @@ def update_edges_around_vertex(vertex_obj):
         ##print(edge_obj.curve_angle)
         
         
-def bend_around_vertex(vertex_obj, p_angle):
+def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
     """
     For a given edge, andle and sym, 
     Bend the edge accordingly whilst ensuring that other edges aro source vertex are validly bent
@@ -403,7 +406,7 @@ def bend_around_vertex(vertex_obj, p_angle):
 
     current_crease = vertex_obj.parent_crease  
 
-    transforms = compute_transformations(vertex_obj, p_angle)
+    transforms = compute_transformations(vertex_obj, p_angle, start_edge)
     
     new_vertices = [None] * len(current_crease.new_vertices)
     for (i, face) in enumerate(vertex_obj.surrounding_faces):
@@ -415,7 +418,9 @@ def bend_around_vertex(vertex_obj, p_angle):
     
     current_crease.new_vertices = new_vertices
     
-    update_edges_around_vertex(vertex_obj)
+    if update:
+        update_edges_around_vertex(vertex_obj)
+
                 
         
 

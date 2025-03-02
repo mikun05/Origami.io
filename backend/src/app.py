@@ -6,6 +6,7 @@ import numpy as np
 
 from smooth_fold_gens import *
 from edge_fold import *
+from angle_optimisation import *
 
 app = Flask(__name__)
 CORS(app)
@@ -281,7 +282,9 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
+    gradient_descent(pattern.vertex_objects[vertex_index], converted_angle)
+
+    #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
         
  
     
