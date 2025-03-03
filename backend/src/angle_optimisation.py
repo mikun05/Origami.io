@@ -1,10 +1,13 @@
 from constraints import get_sector_angle
 from edge_fold import bend_around_vertex
-from time import sleep
+from scipy.optimize import minimize
 import numpy as np
 import torch
 import random
 
+def rem_floating_point_errors(flt):
+    return torch.where(torch.abs(flt) < 1e-7, torch.tensor(0.0), flt)
+    
 def tachi_constraints_edge_level_inputted(edge_obj, p_angle):
     """This differs from the other version as it checks the constraints for
     non_uniform inputted angles
@@ -12,36 +15,52 @@ def tachi_constraints_edge_level_inputted(edge_obj, p_angle):
     A check (mainly out of curiosity) to see if the resultant folds (non-uniform)
     satisfy the constraints
     """
-    sector_angle = torch.tensor(get_sector_angle(edge_obj), dtype=torch.float32)
+    
+    if not isinstance(p_angle, torch.Tensor):
+        p_angle = torch.tensor(p_angle, dtype=torch.float32)
+    
+    print('pangle')
+    print('p_angle', p_angle)
+    
+    sector_angle = get_sector_angle(edge_obj)
+    
+    if not isinstance(sector_angle, torch.Tensor):
+        sector_angle = torch.tensor(get_sector_angle(edge_obj), dtype=torch.float32)
     
     dihedral_angle = p_angle if edge_obj.fold_type == 'V' else (torch.pi * 2) - p_angle
 
-    sin_theta, cos_theta = torch.sin(sector_angle), torch.cos(sector_angle)
-    sin_rho, cos_rho = torch.sin(dihedral_angle), torch.cos(dihedral_angle)
+    sin_theta, cos_theta = rem_floating_point_errors(torch.sin(sector_angle)), rem_floating_point_errors(torch.cos(sector_angle))
+    sin_rho, cos_rho = rem_floating_point_errors(torch.sin(dihedral_angle)), rem_floating_point_errors(torch.cos(dihedral_angle))
     
-    sector_angle_matrix = torch.tensor([[cos_theta, -sin_theta, 0],
-                                    [sin_theta, cos_theta,  0],
-                                    [0,   0,    1]], dtype=torch.float32)
+    print('th', sin_theta, cos_theta)
+    print('rh', sin_rho, cos_rho)
+    sector_angle_matrix = torch.stack([torch.stack([cos_theta, -sin_theta, torch.tensor(0.0)]),
+                                       torch.stack([sin_theta, cos_theta,  torch.tensor(0.0)]),
+                                       torch.stack([torch.tensor(0.0),   torch.tensor(0.0),    torch.tensor(1.0)])])
 
-    fold_angle_matrix = torch.tensor([[1, 0,       0],
-                                  [0, cos_rho, -sin_rho],
-                                  [0, sin_rho, cos_rho]], dtype=torch.float32)
-
+    fold_angle_matrix = torch.stack([torch.stack([torch.tensor(1.0), torch.tensor(0.0),       torch.tensor(0.0)]),
+                                     torch.stack([torch.tensor(0.0), cos_rho, -sin_rho]),
+                                     torch.stack([torch.tensor(0.0), sin_rho, cos_rho])]) ###tracks gradient
     
+    print(sector_angle_matrix)
+    print(fold_angle_matrix)
+
+    print('inner tac')
+    print(torch.matmul(sector_angle_matrix, fold_angle_matrix))
     return torch.matmul(sector_angle_matrix, fold_angle_matrix)
-    
-
     
 def tachi_constraints_vertex_level_inputted(vertex_obj, p_angles):
     ident = torch.eye(3, dtype=torch.float32)
     prod = ident.clone()
-    
+    print('anglesss')
+    print(p_angles)
     for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
         prod = torch.matmul(prod, tachi_constraints_edge_level_inputted(edge_obj, p_angles[i]))
    
     #compute frobenius norm of the difference
     closeness_val = torch.norm(prod-ident, p="fro")
     
+    print('tac', closeness_val)
     return closeness_val #this return a number indicating the closeness of both matrices
 
 
@@ -53,14 +72,30 @@ def obj_function(angles, vertex_obj, uniform_angle, opt):
         If optimiser is the sequential quadratic programming method, 
         we do not need to write the loop_closure_check into the objective function
         """
+        print('2.angles', angles)
+
+        if not isinstance(angles, torch.Tensor):
+            angles = torch.tensor(angles, dtype=torch.float32, requires_grad=True)
+            
+        if not isinstance(uniform_angle, torch.Tensor):
+            uniform_angle = torch.tensor(uniform_angle, dtype=torch.float32)
+    
+        print('3.angles', angles)
+        
         loop_closure_check = 0 if opt=="SQP" else tachi_constraints_vertex_level_inputted(vertex_obj, angles) 
+        loop_weight = 1.2 if opt=="LBFGSB" else 0.1 ##loop weight needs to be pretty high to aim that loop closure is satisfied for gradient descent. Otherwise, algorithm priorises satisfying other two constraints
         
         uniform_closeness = torch.sum((angles - uniform_angle) ** 2)
-        
+        uniform_weight = 1
         diff_matrix = diff_matrix = angles.unsqueeze(1) - angles.unsqueeze(0)  # Expands dimensions to (N, N)
         relative_closeness = torch.sum(diff_matrix ** 2)
         
-        return loop_closure_check + uniform_closeness 
+        print('loop_closure_check', loop_closure_check)
+        print('uni', uniform_closeness)
+        
+        return ((loop_weight*loop_closure_check) + (uniform_weight*uniform_closeness))
+    
+
     
 
 def get_new_angles(vertex_obj):
@@ -68,9 +103,20 @@ def get_new_angles(vertex_obj):
     
     for edge_obj in vertex_obj.surrounding_edges:
         new_angles.append(edge_obj.curve_angle)
-        
+    
+    print('0.angle', new_angles)
     return new_angles
 
+def compute_gradient(angles, vertex_obj, uniform_angle, opt):
+        #compute objective function
+    angles_tensor = torch.tensor(angles, dtype=torch.float32, requires_grad=True)
+
+    loss = obj_function(angles_tensor, vertex_obj, uniform_angle, opt)
+
+    # Compute gradients using autograd
+    loss.backward()
+    
+    return angles_tensor.grad.numpy()
 
 def gradient_descent(vertex_obj, uniform_angle):
     """
@@ -92,8 +138,8 @@ def gradient_descent(vertex_obj, uniform_angle):
     bend_around_vertex(vertex_obj, uniform_angle)
     actual_angles = get_new_angles(vertex_obj)
 
-    print('iteration', iteration, input_angles)
-    print('iteration', iteration, actual_angles)
+    # print('iteration', iteration, input_angles)
+    # print('iteration', iteration, actual_angles)
         
     while iteration <= num_of_iterations:
         iteration += 1
@@ -105,13 +151,12 @@ def gradient_descent(vertex_obj, uniform_angle):
         bend_around_vertex(vertex_obj, input_angles, start_edge=start_edge)
         actual_angles = get_new_angles(vertex_obj)
         
-        print('iteration', iteration, input_angles)
-        print('iteration', iteration, actual_angles)
+        # print('iteration', iteration, input_angles)
+        # print('iteration', iteration, actual_angles)
         ##if input angles and actual angles are the same then we terminate immediately
-        ##we then check if the vertex loop constraint is satisfied
-
-      
+        ##we then check if the vertex loop constraint is satisfied  
     
+    print('done')
 
 def gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, angles, learning_rate, stopping_threshold):
     """
@@ -133,19 +178,62 @@ def gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, angles, 
     This will probably be whether the given angles are actually folded by vertex edge folder, or if some other fold (close to but not quite the sepcified angles) occurs
     """
     
-    
-    angles_tensor = torch.tensor(angles, dtype=torch.float32, requires_grad=True)
+        
+    gradient = compute_gradient(angles, vertex_obj, uniform_angle, opt="GD")
 
-    #compute objective function
-    loss = obj_function(angles_tensor, vertex_obj, uniform_angle, opt="GD")
+    print('HEREE', np.array(angles) - learning_rate * gradient)
+    return np.array(angles) - learning_rate * gradient
 
-    # Compute gradients using autograd
-    loss.backward()
 
-    print('HEREE', np.array(angles) - learning_rate * angles_tensor.grad.numpy())
-    return np.array(angles) - learning_rate * angles_tensor.grad.numpy()
+def obj_function_numpy(angles, vertex_obj, uniform_angle, opt):
+    print('1.angles', angles)
+    
+
+    loss = obj_function(angles, vertex_obj, uniform_angle, opt)
+    
+    print('loss', loss)
+    return loss.detach().item()
+
+
+
+def l_bfgs_b(vertex_obj, uniform_angle):
+    """
+    This function aims to minimize the objective function using second-order approximation
+    It should converge faster than simple gradient descent, and handle the constraints baked into the objective function better (though not explicitly)
+    Here we use the scipy library 
+    Note: sciPy converst everything to numpy
+    """
+
+    num_edges = len(vertex_obj.surrounding_edges)
+    
+    bend_around_vertex(vertex_obj, uniform_angle)
+    initial_bend = get_new_angles(vertex_obj)
+    input_angles = np.array(initial_bend.copy())
+    # input_angles_tensor = torch.tensor(input_angles, dtype=torch.float32, requires_grad=True)
+
+
     
     
+    print('hhh')  
+    
+    l_bfgs_b_helper(vertex_obj, uniform_angle, input_angles)
+    
+
+
+def l_bfgs_b_helper(vertex_obj, uniform_angle, initial_angles):
+    new_angles = minimize(obj_function_numpy, 
+                         initial_angles, 
+                         (vertex_obj, uniform_angle, 'LBFGSB'),
+                         method="L-BFGS-B", 
+                         jac=compute_gradient,
+                         bounds=None,
+                         options = {'maxiter': 10000, 'disp':True})   
     
     
-    
+    ##seems to solve for angles properly ... intended angles are good.
+    ##what is visually folded differs drastically
+    bend_around_vertex(vertex_obj, new_angles.x)
+    print('!!!COMPUTED fold angles', get_new_angles(vertex_obj))
+
+    print("done folding")
+ 

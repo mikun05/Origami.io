@@ -282,7 +282,7 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    gradient_descent(pattern.vertex_objects[vertex_index], converted_angle)
+    l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
         

@@ -56,7 +56,7 @@ def compute_transformations(vertex_obj, angle, start_edge):
     
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
     transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
-    
+    print('!!!INTENDED fold angles', angle)
     for i_count in range(1,n):
         i = (start_edge + i_count) % (n)
         right_edge_obj = vertex_obj.surrounding_edges[i]
@@ -82,7 +82,7 @@ def compute_transformations(vertex_obj, angle, start_edge):
         transforms[i] = np.dot(transforms[i-1], R) if i != 0 else np.dot(transforms[n-1], R)
         print('USED', transforms[i])
 
-        
+
     return transforms
 
 
@@ -425,10 +425,10 @@ def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
         
 
     
-    # if (tachi_constraints_vertex_level(vertex_obj, p_angle)):
-    #     print("#####INTENDED IS A VALID FOLD CONFIG")
-    # else:
-    #     print("XXXXXINTENDED IS NOT A VALID FOLD CONFIG")
+    if (tachi_constraints_vertex_level(vertex_obj, p_angle)):
+        print("#####INTENDED IS A VALID FOLD CONFIG")
+    else:
+        print("XXXXXINTENDED IS NOT A VALID FOLD CONFIG")
         
     
     if (tachi_constraints_vertex_level_computed(vertex_obj)):

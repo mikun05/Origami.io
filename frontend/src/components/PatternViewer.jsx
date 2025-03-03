@@ -476,7 +476,7 @@ const PatternViewer = (props) => {
                         <bufferAttribute attach="attributes-color" args={[top_face_colors, 3]} />
                         <bufferAttribute attach="index" args={[faces, 1]} />
                     </bufferGeometry>
-                    <meshBasicMaterial color={'red'} wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
+                    <meshBasicMaterial color={'crimson'} wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
                 </mesh>
 
                 <mesh> 

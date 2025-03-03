@@ -22,17 +22,20 @@ def get_sector_angle(edge_obj):
     return (2 * np.pi) - sector_angle 
     
     
-def tachi_constraints_vertex_level(vertex_obj, p_angle):
+def tachi_constraints_vertex_level(vertex_obj, pangles):
     ident = np.eye(3)
     prod = ident
     
-    for edge_obj in vertex_obj.surrounding_edges:
-        prod = np.dot(prod, tachi_constraints_edge_level(edge_obj, p_angle))
+    for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
+        p_angle = pangles[i] if isinstance(pangles, (list, np.ndarray)) else pangles
+        prod = np.matmul(prod, tachi_constraints_edge_level(edge_obj, p_angle))
    
     # print(prod)
-    # print(ident)
+    print(prod)
     # print(np.allclose(prod, ident, atol=1e-15))
-    return np.allclose(prod, ident) #(prod == ident).all()
+    diff_norm = np.linalg.norm(prod - ident, ord="fro")
+    print('plse print', diff_norm)
+    return diff_norm <= 1e-05#np.allclose(prod, ident, atol=1e-05) #(prod == ident).all()
     
 
 def tachi_constraints_edge_level(edge_obj, p_angle):
@@ -109,12 +112,13 @@ def tachi_constraints_vertex_level_computed(vertex_obj):
     prod = ident
     
     for edge_obj in vertex_obj.surrounding_edges:
-        prod = np.dot(prod, tachi_constraints_edge_level_computed(edge_obj))
+        prod = np.matmul(prod, tachi_constraints_edge_level_computed(edge_obj))
    
     print(prod)
     print(ident)
-    print(np.allclose(prod, ident, atol=1e-15))
-    return np.allclose(prod, ident) #(prod == ident).all()
+    diff_norm = np.linalg.norm(prod - ident, ord="fro")
+    print('diff_norm,ac', diff_norm)
+    return diff_norm <= 1e-05 #np.allclose(prod, ident, atol=1e-05) #(prod == ident).all()
 
 
 
