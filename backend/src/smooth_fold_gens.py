@@ -558,6 +558,7 @@ class SmoothFoldPatternEdge:
         self.curve_angle = curve_angle
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
         [self.faceR, self.faceL] = self.get_right_left_face(faceA, faceB)
+        self.length = self.get_edge_length()
         
         
     def to_dict(self):
@@ -603,9 +604,9 @@ class SmoothFoldPatternEdge:
         def two_d_cross(d, v):
             return (d[0] * v[1] - d[1] * v[0])
         
-        print('num', self.id)
-        print('a', faceA)
-        print('b', faceB)
+        # print('num', self.id)
+        # print('a', faceA)
+        # print('b', faceB)
         
         flat_vertices = self.parent_vertex.parent_crease.flat_vertices
         
@@ -634,13 +635,16 @@ class SmoothFoldPatternEdge:
         self.edge_coords = edge_coords
         self.original_source_vertex = self.parent_vertex.parent_crease.flat_vertices[self.id[0]]
         self.source_vertex = self.parent_vertex.parent_crease.new_vertices[self.id[0]]
+        
+        
+                
+        if np.allclose(self.edge_coords[0], self.source_vertex):
+            self.edge_vector = np.array(self.edge_coords[1]) - np.array(self.source_vertex)
+        else:
+            self.edge_vector = np.array(self.edge_coords[0]) - np.array(self.source_vertex)
 
-        ##update the rest
-        #moev the edge and edeg vector accordingly 
-        ##constraints and validty checks will be done before calling this function
-        
-        
-        
+    def get_edge_length(self):
+        return np.linalg.norm(self.edge_vector)
     
         
     

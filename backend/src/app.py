@@ -130,7 +130,22 @@ water_bomb_base_fold_data = {
                 [6,1,0], [6,2,1], [6,3,2], [6,4,3], [6,5,4], [6,0,5]
             ],
             "edges_assignment": [
-                "B", "M", "M", "B", "B", "V", "V", "B", "M", "M", "B", "B",
+                "B", "V", "V", "B", "B", "M", "M", "B", "V", "V", "B", "B",
+            ]
+        }
+
+other_traingle = {
+            "vertices_coords": [
+                [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0], [0, 10, 0], [0, -10, 0]
+            ],
+            "edges_vertices": [
+                [0, 1], [0, 6], [1, 6], [0, 5], [1,2], [5,6], [6,2], [5,4], [6,4], [6,3], [2,3], [4,3], [6,7], [6,8]
+            ],
+            "faces_vertices": [
+                [6,7,0], [6,1,7], [6,2,1], [6,3,2], [6,8,3], [6,4,8], [6,5,4], [6,0,5]
+            ],
+            "edges_assignment": [
+                "B", "V", "V", "B", "B", "M", "M", "B", "V", "V", "B", "B", "M", "M"
             ]
         }
 
@@ -184,7 +199,6 @@ two_miura_ori_fold = {
 
 
 example_fold_data = water_bomb_base_fold_data
-
 pattern = SmoothFoldPattern(example_fold_data)
 
 @app.route('/get-fold-pattern', methods=['GET'])
@@ -282,7 +296,7 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
+    annealing_optimiser(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
         

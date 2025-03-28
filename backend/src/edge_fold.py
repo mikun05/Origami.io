@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.optimize import fmin_cg
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
 from constraints import *
 
@@ -50,43 +51,109 @@ def rodrigues_rotation_matrix(edge_obj, angle):
     return R
 
 def compute_transformations(vertex_obj, angle, start_edge):
+    """
+    Sequential folding is almost.
+    But the start edge has the wrong dihedral angle due to interference from folding the last edge.
+    Due to this, 
+    even when we have a valid fold configuration from gradient_descent or lbfgs,
+    we can not visualise the fold configuration, we can instead only simulate one which is close except for two angles
+    """
 
     surrounding_faces = vertex_obj.surrounding_faces
     n = len(surrounding_faces)
     
+    
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
-    transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
+    #transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
     print('!!!INTENDED fold angles', angle)
-    for i_count in range(1,n):
+    for i_count in range(0,n):
         i = (start_edge + i_count) % (n)
         right_edge_obj = vertex_obj.surrounding_edges[i]
         ##for each face, we move according to the angle assigned to the edge on its right.
         
         # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
-        print('angles', angle)
         fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
-        print(fold_angle)
-        ang = fold_angle +np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
-        print('ang', ang)
+        ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
 
         #crease between face (i-1) and face i:
         # R1 = rodrigues_rotation_matrix(left_edge_obj, angle_from_left_edge)
         R = rodrigues_rotation_matrix(right_edge_obj, ang)
 
-        
-        #transformation for face i is the cumulative rotation.
-        ##print('Y1', np.dot(transforms[i-1], R)) ##based on how the angle changes based on previous rotations
-        # ##print('Y2', np.dot(np.dot(transforms[i-1], R1), R2))
-
-        print('raw', R)
-        transforms[i] = np.dot(transforms[i-1], R) if i != 0 else np.dot(transforms[n-1], R)
-        print('USED', transforms[i])
-
+        transforms[i] = R if i_count == 0 else np.dot(transforms[i-1 % n], R)
 
     return transforms
 
+def post_fold_vertices(vertex_obj, initial_edge_vectors, angles):
+    
+    if not isinstance(angles, (list, np.ndarray)):
+        angles = [angles] * len(vertex_obj.surrounding_edges)
+
+    def compute_curve_angle_between(edge_vector, left_edge_vector, right_edge_vector, edge_obj):
+        """There is already a way of obtaining this svalue fro edge_obj, but this does not allow scipy to track grsdients.
+        Here we do it again, explicityly linking the edge vectors to the curve angles
+        The left edge vector is and edgevector of the left face, likewise for the right edge_vector
+        
+        I will use these as 'points' to calculate the face rotations"""
+        
+        # print('mid', edge_vector)
+        # print('left', left_edge_vector)
+        # print('right', right_edge_vector)
+        
+        
+        n1 = np.cross(right_edge_vector, edge_vector )
+        n2 = np.cross(edge_vector, left_edge_vector)
+        
+        normalized_1 = n1 / np.linalg.norm(n1)
+        normalized_2 = n2 / np.linalg.norm(n2)
+        
+        dot_product = np.dot(normalized_1, normalized_2)
+        
+        angle = np.arccos(dot_product)
+        
+        #fold_angle = scale * angle ##scale * (np.pi - angle) -> result from book assuming normla in flat crease pattern is [0,0,-1] but I have now made it so that it is [0, 0, 1] 
+        fold_angle = np.pi-angle
+
+        # print('fold_angleOPT', np.rad2deg(fold_angle))
+        
+        ##adjust for type of fold
+        return fold_angle #if edge_obj.fold_type == 'V' else (2*np.pi)-fold_angle
+        
+        
+        
+        
+    def obj_function(edge_vectors):
+        # print('all edge_vectors', edge_vectors)
+        n = len(edge_vectors) // 3 ##since the list gets flattende to a 1d array
+        E_i_list = [(compute_curve_angle_between(edge_vectors[i:i+3], edge_vectors[(((i-1) % n)*3) : (((i-1) % n)*3) + 3], edge_vectors[((i+1) % n)*3 : (((i+1) %n) *3)+3], vertex_obj.surrounding_edges[i]) - angles[i]) ** 2 for i in range(n)]
+        return sum(E_i_list)
+
+    
+    res = fmin_cg(obj_function,
+                  (initial_edge_vectors,),
+                  maxiter=10)
+    
+    
+    ##create linear constraints for all the angles such that we want the computed curve angle to equal the inputted one
+    ##solve for edge_vectors and use to edit endpoints
+    
+    constraints = []
+    n = len(initial_edge_vectors)
+    for i in n:
+        funct = lambda x: compute_curve_angle_between(x[i:i+3], x[(((i-1) % n)*3) : (((i-1) % n)*3) + 3], x[((i+1) % n)*3 : (((i+1) %n) *3)+3], vertex_obj.surrounding_edges[i]) 
+        A = np.vectorize(funct)
+        lb = ub = angles[i]
+        
+        ##A is the matrix which takes the edge_vector i from x (x is a flat vector of edge_vectors) and computes its dihedral angle.
+        ##need to turn the constraint into a matrix basically
+        ##lb is the angle we want it to be
+        
+        
+    
+    return res
+
 
 def get_local_bases(edge_obj):
+    
         """
         This takes in the edge_obj and the edge as a tuple of pointers to vertices (as in the CreasePattern)
         And calculates its local bases. 
@@ -393,6 +460,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
 def update_edges_around_vertex(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         edge_obj.update_edge()
+        print('length', edge_obj.length)
         ##print(edge_obj.curve_angle)
         
         
@@ -407,22 +475,46 @@ def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
     current_crease = vertex_obj.parent_crease  
 
     transforms = compute_transformations(vertex_obj, p_angle, start_edge)
-    
-    new_vertices = [None] * len(current_crease.new_vertices)
+    n = len(current_crease.new_vertices)
+    new_vertices = [None] * n
     for (i, face) in enumerate(vertex_obj.surrounding_faces):
-        print('face', face)
         T = transforms.get(i)
 
         for v in face:
             new_vertices[v] = np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()
     
-    current_crease.new_vertices = new_vertices
+    current_crease.new_vertices = new_vertices ##issue for when we move on to multivertexed folds. .. i only want to change affeted vertices not replace th whole vertex list
     
     if update:
         update_edges_around_vertex(vertex_obj)
+    
+    
+    #######OPTIMISER
+    # edge_vectors = [edge_obj.edge_vector for edge_obj in vertex_obj.surrounding_edges]
+    
+    # newer_flat = post_fold_vertices(vertex_obj, edge_vectors, p_angle)
+    # print(newer_flat)
 
-                
+    # new_edge_vectors = [newer_flat[(3*i) : (3*i + 3)] for i in range(n)]
+    
+    
+    # for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
+    #     #newer_vertices = {}
+    #     ##we want to use edge pointer to get the vertex of the endpoint of the edge_vector
+    #     ##and then update these using the new edge vectors
+    #     source_vertex_pos = edge_obj.id[0]
+    #     end_vertex_pos = edge_obj.edge_pointer[0] if edge_obj.edge_pointer[1]==source_vertex_pos else edge_obj.edge_pointer[1]
+    #     print('source vertex', current_crease.flat_vertices[source_vertex_pos])
+
+    #     current_crease.new_vertices[end_vertex_pos] = (np.array(current_crease.flat_vertices[source_vertex_pos]) + np.array(new_edge_vectors[i])).tolist()
+
+    # print('new vertices')
+    # print(current_crease.new_vertices)
+    # if update:
+    #     update_edges_around_vertex(vertex_obj)
         
+    #current_crease.new_vertices = newer_vertices
+
 
     
     if (tachi_constraints_vertex_level(vertex_obj, p_angle)):

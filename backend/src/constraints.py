@@ -30,11 +30,10 @@ def tachi_constraints_vertex_level(vertex_obj, pangles):
         p_angle = pangles[i] if isinstance(pangles, (list, np.ndarray)) else pangles
         prod = np.matmul(prod, tachi_constraints_edge_level(edge_obj, p_angle))
    
-    # print(prod)
     print(prod)
     # print(np.allclose(prod, ident, atol=1e-15))
     diff_norm = np.linalg.norm(prod - ident, ord="fro")
-    print('plse print', diff_norm)
+    # print('plse print', diff_norm)
     return diff_norm <= 1e-05#np.allclose(prod, ident, atol=1e-05) #(prod == ident).all()
     
 
@@ -77,18 +76,15 @@ def tachi_constraints_edge_level_computed(edge_obj):
     satisfy the constraints
     """
     
-    print(edge_obj.fold_type)
         
     sector_angle = get_sector_angle(edge_obj)
     
     dihedral_angle = edge_obj.curve_angle if edge_obj.fold_type == 'V' else (np.pi * 2) - edge_obj.curve_angle
 
 
-    print(np.degrees(sector_angle))
     sin_theta = np.sin(sector_angle)
     cos_theta = np.cos(sector_angle)
     
-    print(np.degrees(dihedral_angle))
     sin_rho = np.sin(dihedral_angle)
     cos_rho = np.cos(dihedral_angle)
     
@@ -114,10 +110,10 @@ def tachi_constraints_vertex_level_computed(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         prod = np.matmul(prod, tachi_constraints_edge_level_computed(edge_obj))
    
-    print(prod)
-    print(ident)
+    # print(prod)
+    # print(ident)
     diff_norm = np.linalg.norm(prod - ident, ord="fro")
-    print('diff_norm,ac', diff_norm)
+    # print('diff_norm,ac', diff_norm)
     return diff_norm <= 1e-05 #np.allclose(prod, ident, atol=1e-05) #(prod == ident).all()
 
 

@@ -1,6 +1,8 @@
 from constraints import get_sector_angle
 from edge_fold import bend_around_vertex
 from scipy.optimize import minimize
+from scipy.optimize import least_squares
+from scipy.spatial.transform import Rotation as R
 import numpy as np
 import torch
 import random
@@ -19,8 +21,8 @@ def tachi_constraints_edge_level_inputted(edge_obj, p_angle):
     if not isinstance(p_angle, torch.Tensor):
         p_angle = torch.tensor(p_angle, dtype=torch.float32)
     
-    print('pangle')
-    print('p_angle', p_angle)
+    # print('pangle')
+    # print('p_angle', p_angle)
     
     sector_angle = get_sector_angle(edge_obj)
     
@@ -32,8 +34,8 @@ def tachi_constraints_edge_level_inputted(edge_obj, p_angle):
     sin_theta, cos_theta = rem_floating_point_errors(torch.sin(sector_angle)), rem_floating_point_errors(torch.cos(sector_angle))
     sin_rho, cos_rho = rem_floating_point_errors(torch.sin(dihedral_angle)), rem_floating_point_errors(torch.cos(dihedral_angle))
     
-    print('th', sin_theta, cos_theta)
-    print('rh', sin_rho, cos_rho)
+    # print('th', sin_theta, cos_theta)
+    # print('rh', sin_rho, cos_rho)
     sector_angle_matrix = torch.stack([torch.stack([cos_theta, -sin_theta, torch.tensor(0.0)]),
                                        torch.stack([sin_theta, cos_theta,  torch.tensor(0.0)]),
                                        torch.stack([torch.tensor(0.0),   torch.tensor(0.0),    torch.tensor(1.0)])])
@@ -42,25 +44,25 @@ def tachi_constraints_edge_level_inputted(edge_obj, p_angle):
                                      torch.stack([torch.tensor(0.0), cos_rho, -sin_rho]),
                                      torch.stack([torch.tensor(0.0), sin_rho, cos_rho])]) ###tracks gradient
     
-    print(sector_angle_matrix)
-    print(fold_angle_matrix)
+    # print(sector_angle_matrix)
+    # print(fold_angle_matrix)
 
-    print('inner tac')
-    print(torch.matmul(sector_angle_matrix, fold_angle_matrix))
+    # print('inner tac')
+    # print(torch.matmul(sector_angle_matrix, fold_angle_matrix))
     return torch.matmul(sector_angle_matrix, fold_angle_matrix)
     
 def tachi_constraints_vertex_level_inputted(vertex_obj, p_angles):
     ident = torch.eye(3, dtype=torch.float32)
     prod = ident.clone()
-    print('anglesss')
-    print(p_angles)
+    # print('anglesss')
+    # print(p_angles)
     for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
         prod = torch.matmul(prod, tachi_constraints_edge_level_inputted(edge_obj, p_angles[i]))
    
     #compute frobenius norm of the difference
     closeness_val = torch.norm(prod-ident, p="fro")
     
-    print('tac', closeness_val)
+    # print('tac', closeness_val)
     return closeness_val #this return a number indicating the closeness of both matrices
 
 
@@ -72,15 +74,13 @@ def obj_function(angles, vertex_obj, uniform_angle, opt):
         If optimiser is the sequential quadratic programming method, 
         we do not need to write the loop_closure_check into the objective function
         """
-        print('2.angles', angles)
 
         if not isinstance(angles, torch.Tensor):
             angles = torch.tensor(angles, dtype=torch.float32, requires_grad=True)
             
-        if not isinstance(uniform_angle, torch.Tensor):
-            uniform_angle = torch.tensor(uniform_angle, dtype=torch.float32)
+        #if not isinstance(uniform_angle, torch.Tensor):
+        uniform_angle = torch.tensor(uniform_angle, dtype=torch.float32)
     
-        print('3.angles', angles)
         
         loop_closure_check = 0 if opt=="SQP" else tachi_constraints_vertex_level_inputted(vertex_obj, angles) 
         loop_weight = 1.2 if opt=="LBFGSB" else 0.1 ##loop weight needs to be pretty high to aim that loop closure is satisfied for gradient descent. Otherwise, algorithm priorises satisfying other two constraints
@@ -90,8 +90,12 @@ def obj_function(angles, vertex_obj, uniform_angle, opt):
         diff_matrix = diff_matrix = angles.unsqueeze(1) - angles.unsqueeze(0)  # Expands dimensions to (N, N)
         relative_closeness = torch.sum(diff_matrix ** 2)
         
-        print('loop_closure_check', loop_closure_check)
-        print('uni', uniform_closeness)
+        ##ADD IN CHECK THAT THE ANGLE ALONG THE PLANE OF EACH FACE AT THE VERTEX REMAINS FIXED
+        ##This check can also be implemented by checking that the distance the creases around a face are form each other has not changed.
+        
+        
+        # print('loop_closure_check', loop_closure_check)
+        # print('uni', uniform_closeness)
         
         return ((loop_weight*loop_closure_check) + (uniform_weight*uniform_closeness))
     
@@ -104,7 +108,6 @@ def get_new_angles(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         new_angles.append(edge_obj.curve_angle)
     
-    print('0.angle', new_angles)
     return new_angles
 
 def compute_gradient(angles, vertex_obj, uniform_angle, opt):
@@ -131,7 +134,7 @@ def gradient_descent(vertex_obj, uniform_angle):
     2. the angles from the previous iteration
     """
     num_edges = len(vertex_obj.surrounding_edges)
-    num_of_iterations = 50
+    num_of_iterations = 10000
     iteration = 1
     
     input_angles = [uniform_angle] * num_edges
@@ -144,19 +147,21 @@ def gradient_descent(vertex_obj, uniform_angle):
     while iteration <= num_of_iterations:
         iteration += 1
         
-        input_angles = gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, actual_angles, 0.1, 3) ##this version uses the actual angles of the previous iteration
+        input_angles = gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, input_angles, 0.1, 3) ##this version uses the actual angles of the previous iteration
         # input_angles = gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, input_angles, 0.0001, 0.0001, 3) ##this version uses the previous iteration's input angles
 
         start_edge = random.randint(0, len(vertex_obj.surrounding_edges)-1) ##we want to start the refolding process from a random point to spread the offset (otherwise going counter clockwise from edge 0, only 0 and 1 would have the errors)
         bend_around_vertex(vertex_obj, input_angles, start_edge=start_edge)
         actual_angles = get_new_angles(vertex_obj)
         
+        
+        
         # print('iteration', iteration, input_angles)
         # print('iteration', iteration, actual_angles)
         ##if input angles and actual angles are the same then we terminate immediately
         ##we then check if the vertex loop constraint is satisfied  
-    
-    print('done')
+    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
+    print('gd done')
 
 def gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, angles, learning_rate, stopping_threshold):
     """
@@ -181,17 +186,15 @@ def gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, angles, 
         
     gradient = compute_gradient(angles, vertex_obj, uniform_angle, opt="GD")
 
-    print('HEREE', np.array(angles) - learning_rate * gradient)
+    # print('HEREE', np.array(angles) - learning_rate * gradient)
     return np.array(angles) - learning_rate * gradient
 
 
 def obj_function_numpy(angles, vertex_obj, uniform_angle, opt):
-    print('1.angles', angles)
     
 
     loss = obj_function(angles, vertex_obj, uniform_angle, opt)
     
-    print('loss', loss)
     return loss.detach().item()
 
 
@@ -210,11 +213,11 @@ def l_bfgs_b(vertex_obj, uniform_angle):
     initial_bend = get_new_angles(vertex_obj)
     input_angles = np.array(initial_bend.copy())
     # input_angles_tensor = torch.tensor(input_angles, dtype=torch.float32, requires_grad=True)
+    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
 
 
     
     
-    print('hhh')  
     
     l_bfgs_b_helper(vertex_obj, uniform_angle, input_angles)
     
@@ -227,13 +230,124 @@ def l_bfgs_b_helper(vertex_obj, uniform_angle, initial_angles):
                          method="L-BFGS-B", 
                          jac=compute_gradient,
                          bounds=None,
-                         options = {'maxiter': 10000, 'disp':True})   
+                         options={
+                                    'maxiter': 20000,
+                                    'disp': True,
+                                    'gtol': 1e-12,
+                                    'ftol': 1e-14,
+                                    'maxfun': 100000,
+                                    'eps': 1e-10
+                                })
     
+    print(new_angles)
+    ##seems to solve for angles properly ... intended angles are good.
+    ##what is visually folded differs drastically
+    bend_around_vertex(vertex_obj, new_angles.x)
+    print('Intended Fold Angles @ src', new_angles.x)
+    print(new_angles.x)
+    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
+
+
+
+def annealing_optimiser(vertex_obj, uniform_angle):
+    num_edges = len(vertex_obj.surrounding_edges)
+    initial_angles = np.array([0.0] * num_edges)
+    step_deg = 1
+    step_rad = np.deg2rad(step_deg)  
+
+    start_angle = np.deg2rad(step_deg)
+    end_angle = uniform_angle  # already in radians
+    
+    new_angles = minimize(obj_function_numpy, 
+                         initial_angles, 
+                         (vertex_obj, 0.0, 'LBFGSB'),
+                         method="L-BFGS-B", 
+                         jac=compute_gradient,
+                         bounds=None,
+                         options={
+                                    'maxiter': 20000,
+                                    'disp': True,
+                                    'gtol': 1e-12,
+                                    'ftol': 1e-14,
+                                    'maxfun': 100000,
+                                    'eps': 1e-10
+                                })
+  
+    
+    for angle in np.arange(start_angle, end_angle + 1e-8, step_rad):
+        print('inm', angle)
+        new_angles = minimize(obj_function_numpy, 
+                         new_angles.x, 
+                         (vertex_obj, angle, 'LBFGSB'),
+                         method="L-BFGS-B", 
+                         jac=compute_gradient,
+                         bounds=None,
+                         options={
+                                    'maxiter': 20000,
+                                    'disp': True,
+                                    'gtol': 1e-12,
+                                    'ftol': 1e-14,
+                                    'maxfun': 100000,
+                                    'eps': 1e-10
+                                })
+    
+    print(new_angles)
+    ##seems to solve for angles properly ... intended angles are good.
+    ##what is visually folded differs drastically
+    bend_around_vertex(vertex_obj, new_angles.x)
+    print('Intended Fold Angles @ src', new_angles.x)
+    print(new_angles.x)
+    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
+    
+    
+
+def annealing_optimiser_dec(vertex_obj, uniform_angle):
+    num_edges = len(vertex_obj.surrounding_edges)
+    initial_angles = np.array([np.deg2rad(180)] * num_edges)
+    step_deg = 1
+    step_rad = np.deg2rad(step_deg)  
+
+    start_angle = np.deg2rad(180)
+    end_angle = uniform_angle  # already in radians
+    
+    new_angles = minimize(obj_function_numpy, 
+                         initial_angles, 
+                         (vertex_obj, np.deg2rad(180), 'LBFGSB'),
+                         method="L-BFGS-B", 
+                         jac=compute_gradient,
+                         bounds=None,
+                         options={
+                                    'maxiter': 20000,
+                                    'disp': True,
+                                    'gtol': 1e-12,
+                                    'ftol': 1e-14,
+                                    'maxfun': 100000,
+                                    'eps': 1e-10
+                                })
+  
+    
+    for angle in np.arange(start_angle, end_angle - 1e-8, -step_rad):
+        #print('inm', angle)
+        new_angles = minimize(obj_function_numpy, 
+                         new_angles.x, 
+                         (vertex_obj, angle, 'LBFGSB'),
+                         method="L-BFGS-B", 
+                         jac=compute_gradient,
+                         bounds=None,
+                         options={
+                                    'maxiter': 20000,
+                                    'disp': True,
+                                    'gtol': 1e-12,
+                                    'ftol': 1e-14,
+                                    'maxfun': 100000,
+                                    'eps': 1e-10
+                                })
+    
+    print(new_angles)
     
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     bend_around_vertex(vertex_obj, new_angles.x)
-    print('!!!COMPUTED fold angles', get_new_angles(vertex_obj))
-
-    print("done folding")
- 
+    print('Intended Fold Angles @ src', new_angles.x)
+    print(new_angles.x)
+    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
