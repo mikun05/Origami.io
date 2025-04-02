@@ -558,7 +558,7 @@ class SmoothFoldPatternEdge:
         self.curve_angle = curve_angle
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
         [self.faceR, self.faceL] = self.get_right_left_face(faceA, faceB)
-        self.length = self.get_edge_length()
+        self.flat_length = self.get_flat_edge_length()
         
         
     def to_dict(self):
@@ -643,8 +643,12 @@ class SmoothFoldPatternEdge:
         else:
             self.edge_vector = np.array(self.edge_coords[0]) - np.array(self.source_vertex)
 
-    def get_edge_length(self):
-        return np.linalg.norm(self.edge_vector)
+    def get_flat_edge_length(self):
+        original_source = self.original_source_vertex
+        end_vertex_pos = self.edge_pointer[0] if self.edge_pointer[1] == self.id[0] else self.edge_pointer[1]
+        
+        flat_edge_vector = np.array(self.parent_vertex.parent_crease.flat_vertices[end_vertex_pos]) - np.array(original_source)
+        return np.linalg.norm(flat_edge_vector)
     
         
     

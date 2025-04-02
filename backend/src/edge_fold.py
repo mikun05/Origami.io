@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import fmin_cg
+from scipy.spatial.transform import Rotation as R
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
 from constraints import *
 
@@ -66,7 +67,8 @@ def compute_transformations(vertex_obj, angle, start_edge):
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
     #transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
     print('!!!INTENDED fold angles', angle)
-    for i_count in range(0,n):
+    transforms[start_edge] = np.eye(3) 
+    for i_count in range(1,n):
         i = (start_edge + i_count) % (n)
         right_edge_obj = vertex_obj.surrounding_edges[i]
         ##for each face, we move according to the angle assigned to the edge on its right.
@@ -74,14 +76,38 @@ def compute_transformations(vertex_obj, angle, start_edge):
         # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
         fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
         ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
-
+        #ang =  (2 * np.pi) - fold_angle if  right_edge_obj.fold_type == "V" else fold_angle
+        
         #crease between face (i-1) and face i:
         # R1 = rodrigues_rotation_matrix(left_edge_obj, angle_from_left_edge)
+        
         R = rodrigues_rotation_matrix(right_edge_obj, ang)
-
-        transforms[i] = R if i_count == 0 else np.dot(transforms[i-1 % n], R)
+        
+        #transforms[i] = T.copy()
+        transforms[i] =  transforms[i-1 % n] @ R
 
     return transforms
+
+def compute_transformations_Q(vertex_obj, angle, start_edge):
+    surrounding_faces = vertex_obj.surrounding_faces
+    n = len(surrounding_faces)
+    
+    
+    transforms = {} 
+    
+    transforms[0] = R.identity()
+    
+    for i in range(1,n):
+        right_edge_obj = vertex_obj.surrounding_edges[i]
+        fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
+        ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
+    
+        r = R.from_rotvec(get_direction_vector(right_edge_obj) * ang)
+
+        r_total = transforms[i-1] * r
+
+        transforms[i] = r_total
+    return(transforms)
 
 def post_fold_vertices(vertex_obj, initial_edge_vectors, angles):
     
@@ -460,7 +486,7 @@ def bend_edge(edge_obj, angle_between_faces, sym):
 def update_edges_around_vertex(vertex_obj):
     for edge_obj in vertex_obj.surrounding_edges:
         edge_obj.update_edge()
-        print('length', edge_obj.length)
+        #print('length', edge_obj.length)
         ##print(edge_obj.curve_angle)
         
         
@@ -473,12 +499,13 @@ def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
     """
 
     current_crease = vertex_obj.parent_crease  
+    ##ACTUALLY FOLDS RODRIGUES ALMOST ACCURATELY p_angle = [np.deg2rad(116.8), np.deg2rad(98), np.deg2rad(98), np.deg2rad(116.8), np.deg2rad(98), np.deg2rad(98)]
 
     transforms = compute_transformations(vertex_obj, p_angle, start_edge)
     n = len(current_crease.new_vertices)
     new_vertices = [None] * n
     for (i, face) in enumerate(vertex_obj.surrounding_faces):
-        T = transforms.get(i)
+        T = transforms.get(i)#.as_matrix()
 
         for v in face:
             new_vertices[v] = np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()

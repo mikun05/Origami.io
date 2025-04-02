@@ -20,8 +20,7 @@ def get_sector_angle(edge_obj):
 
     
     return (2 * np.pi) - sector_angle 
-    
-    
+        
 def tachi_constraints_vertex_level(vertex_obj, pangles):
     ident = np.eye(3)
     prod = ident
@@ -36,7 +35,6 @@ def tachi_constraints_vertex_level(vertex_obj, pangles):
     # print('plse print', diff_norm)
     return diff_norm <= 1e-05#np.allclose(prod, ident, atol=1e-05) #(prod == ident).all()
     
-
 def tachi_constraints_edge_level(edge_obj, p_angle):
     # print(edge_obj.fold_type)
         

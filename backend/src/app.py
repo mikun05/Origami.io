@@ -196,6 +196,21 @@ two_miura_ori_fold = {
     ]
 }
 
+belcastro_fig_2 = {
+     "vertices_coords": [
+        [0,0,0], [10,0,0], [10,10,0], [0,10,0], [-10,10,0], [-10,0,0], [-10,-10,0], [0,-10,0], [10,-10,0]
+    ],
+    "edges_vertices": [
+        [0,1],[0,3],[0,5],[0,6],[0,7],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,1]
+    ],
+    "faces_vertices": [
+        [0,3,4,5],[0,5,6],[0,6,7],[0,7,8,1],[0,1,2,3]
+    ],
+    "edges_assignment": [
+        "V", "V", "V", "M", "V", "B", "B", "B", "B", "B", "B", "B", "B"
+    ]
+}
+
 
 
 example_fold_data = water_bomb_base_fold_data
@@ -296,7 +311,7 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    annealing_optimiser(pattern.vertex_objects[vertex_index], converted_angle)
+    l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
         
