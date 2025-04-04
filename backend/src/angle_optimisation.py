@@ -65,7 +65,7 @@ def tachi_constraints_vertex_level_inputted(vertex_obj, p_angles):
     closeness_val = torch.norm(prod-ident, p="fro") **2
     
     # print('tac', closeness_val)
-    return closeness_val #this return a number indicating the closeness of both matrices
+    return [prod, closeness_val] #this return a number indicating the closeness of both matrices
 
 
 def obj_function(angles, vertex_obj, uniform_angle, opt, loop_weight, uniform_weight):
@@ -84,7 +84,7 @@ def obj_function(angles, vertex_obj, uniform_angle, opt, loop_weight, uniform_we
         uniform_angle = torch.tensor(uniform_angle, dtype=torch.float64)
     
         
-        loop_closure_check = 0 if opt=="SQP" else tachi_constraints_vertex_level_inputted(vertex_obj, angles) 
+        loop_closure_check = 0 if opt=="SQP" else tachi_constraints_vertex_level_inputted(vertex_obj, angles)[1] 
         #loop_weight = 1.2 if opt=="LBFGSB" else 0.1 ##loop weight needs to be pretty high to aim that loop closure is satisfied for gradient descent. Otherwise, algorithm priorises satisfying other two constraints
         
         uniform_closeness = (torch.sum(torch.sqrt((angles - uniform_angle) ** 2)))
@@ -106,9 +106,7 @@ def obj_function(angles, vertex_obj, uniform_angle, opt, loop_weight, uniform_we
         # print('uni', uniform_closeness)
         
         return (loop_weight * torch.sqrt(loop_closure_check)) #+ (uniform_weight*torch.sqrt(count))
-    
-
-    
+      
 
 def get_new_angles(vertex_obj):
     new_angles = []
@@ -129,7 +127,7 @@ def compute_gradient(angles, vertex_obj, uniform_angle, opt, loop_weight, unifor
     
     return angles_tensor.grad.numpy()
 
-def gradient_descent(vertex_obj, uniform_angle):
+def gradient_descent(vertex_obj, uniform_angle, maxiter=1000):
     """
     This function initially calls gradient_descent_iteration with the actual angles obtained from trying to fold by certain inputted angles
     So when we try to fold by uniform angle 100, the fold function returns an invalid fold of 100+-x1, 100+-x2 and so on.
@@ -142,7 +140,7 @@ def gradient_descent(vertex_obj, uniform_angle):
     2. the angles from the previous iteration
     """
     num_edges = len(vertex_obj.surrounding_edges)
-    num_of_iterations = 10000
+    num_of_iterations = maxiter
     iteration = 1
     
     input_angles = [uniform_angle] * num_edges
@@ -170,6 +168,7 @@ def gradient_descent(vertex_obj, uniform_angle):
         ##we then check if the vertex loop constraint is satisfied  
     print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
     print('gd done')
+    return( [ang.item() for ang in get_new_angles(vertex_obj)])
 
 def gradient_descent_iteration(vertex_obj, uniform_angle, obj_function, angles, learning_rate, stopping_threshold):
     """
@@ -207,7 +206,7 @@ def obj_function_numpy(angles, vertex_obj, uniform_angle, opt, loop_weight, unif
 
 
 
-def l_bfgs_b(vertex_obj, uniform_angle):
+def l_bfgs_b(vertex_obj, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15):
     """
     This function aims to minimize the objective function using second-order approximation
     It should converge faster than simple gradient descent, and handle the constraints baked into the objective function better (though not explicitly)
@@ -227,15 +226,15 @@ def l_bfgs_b(vertex_obj, uniform_angle):
     
     
     
-    new_angles = l_bfgs_b_helper(vertex_obj, uniform_angle, input_angles, 3.43, 0)
+    new_angles = l_bfgs_b_helper(vertex_obj, uniform_angle, input_angles, 3.43, 0, maxiter, ftol, eps)
     print(new_angles)
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
     #bend_around_vertex(vertex_obj, np.array(new_angles.x, dtype=np.float64))
     
-    vertex_slsq(vertex_obj, np.array(new_angles.x, dtype=np.float64))
-
+    #vertex_slsq(vertex_obj, np.array(new_angles.x, dtype=np.float64))
+    return new_angles.x
     print('Intended Fold Angles @ src', new_angles.x)
     print(new_angles.x)
     print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
@@ -246,7 +245,7 @@ def l_bfgs_b(vertex_obj, uniform_angle):
     
 
 
-def l_bfgs_b_helper(vertex_obj, uniform_angle, initial_angles, loop_weight, uniform_weight):
+def l_bfgs_b_helper(vertex_obj, uniform_angle, initial_angles, loop_weight, uniform_weight, maxiter, ftol, eps):
     new_angles = minimize(obj_function_numpy, 
                          initial_angles, 
                          (vertex_obj, uniform_angle, 'LBFGSB', loop_weight, uniform_weight),
@@ -254,12 +253,12 @@ def l_bfgs_b_helper(vertex_obj, uniform_angle, initial_angles, loop_weight, unif
                          jac=compute_gradient,
                          bounds=None,
                          options={
-                                    'maxiter': 200000,
+                                    'maxiter': maxiter,
                                     'disp': True,
                                     'gtol': 1e-12,
-                                    'ftol': 1e-14,
+                                    'ftol': ftol,
                                     'maxfun': 100000,
-                                    'eps': 1e-15
+                                    'eps': eps
                                 })
     
     return new_angles
@@ -301,19 +300,20 @@ def re_l_bfgs_b(vertex_obj, uniform_angle):
     
     
     
-def annealing_optimiser(vertex_obj, uniform_angle):
-    new_angles = annealing_optimiser_helper(vertex_obj, uniform_angle, 0.1, 1) #based on graphs loop weight 5 works best for positive annealing
+def annealing_optimiser(vertex_obj, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15):
+    new_angles = annealing_optimiser_helper(vertex_obj, uniform_angle, 0.1, 1, maxiter, ftol, eps) #based on graphs loop weight 5 works best for positive annealing
     print(new_angles)
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
-    bend_around_vertex(vertex_obj, new_angles.x)
+    return new_angles.x
+    #bend_around_vertex(vertex_obj, new_angles.x)
     print('Intended Fold Angles @ src', new_angles.x)
     print(new_angles.x)
     print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
     
 
 
-def annealing_optimiser_helper(vertex_obj, uniform_angle, loop_weight, uniform_weight):
+def annealing_optimiser_helper(vertex_obj, uniform_angle, loop_weight, uniform_weight, maxiter, ftol, eps):
     num_edges = len(vertex_obj.surrounding_edges)
     initial_angles = np.array([0.0] * num_edges)
     step_deg = 1
@@ -322,7 +322,7 @@ def annealing_optimiser_helper(vertex_obj, uniform_angle, loop_weight, uniform_w
     start_angle = np.deg2rad(step_deg)
     end_angle = uniform_angle  # already in radians
     
-    new_angles = l_bfgs_b_helper(vertex_obj, 0.0, initial_angles, loop_weight, uniform_weight)
+    new_angles = l_bfgs_b_helper(vertex_obj, 0.0, initial_angles, loop_weight, uniform_weight, maxiter, ftol, eps)
     # new_angles = minimize(obj_function_numpy, 
     #                      initial_angles, 
     #                      (vertex_obj, 0.0, 'LBFGSB'),
@@ -341,7 +341,7 @@ def annealing_optimiser_helper(vertex_obj, uniform_angle, loop_weight, uniform_w
     
     for angle in np.arange(start_angle, end_angle + 1e-8, step_rad):
         #print('inm', angle)
-        new_angles = l_bfgs_b_helper(vertex_obj, angle, new_angles.x,  loop_weight, uniform_weight)
+        new_angles = l_bfgs_b_helper(vertex_obj, angle, new_angles.x,  loop_weight, uniform_weight, maxiter, ftol, eps)
 
         # new_angles = minimize(obj_function_numpy, 
         #                  new_angles.x, 
@@ -360,17 +360,18 @@ def annealing_optimiser_helper(vertex_obj, uniform_angle, loop_weight, uniform_w
     
     return new_angles
     
-def annealing_optimiser_dec(vertex_obj, uniform_angle):
-    new_angles = annealing_optimiser_dec_helper(vertex_obj, uniform_angle, 1.2, 1)
+def annealing_optimiser_dec(vertex_obj, uniform_angle,maxiter=200000, ftol=1e-14, eps=1e-15):
+    new_angles = annealing_optimiser_dec_helper(vertex_obj, uniform_angle, 1.2, 1, maxiter, ftol, eps)
     print(new_angles)
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
-    bend_around_vertex(vertex_obj, new_angles.x)
+    return new_angles.x
+    #bend_around_vertex(vertex_obj, new_angles.x)
     print('Intended Fold Angles @ src', new_angles.x)
     print(new_angles.x)
     print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
     
-def annealing_optimiser_dec_helper(vertex_obj, uniform_angle, loop_weight, uniform_weight):
+def annealing_optimiser_dec_helper(vertex_obj, uniform_angle, loop_weight, uniform_weight, maxiter, ftol, eps):
     num_edges = len(vertex_obj.surrounding_edges)
     initial_angles = np.array([np.deg2rad(180)] * num_edges)
     step_deg = 1
@@ -379,7 +380,7 @@ def annealing_optimiser_dec_helper(vertex_obj, uniform_angle, loop_weight, unifo
     start_angle = np.deg2rad(180)
     end_angle = uniform_angle  # already in radians
     
-    new_angles = l_bfgs_b_helper(vertex_obj, np.deg2rad(180), initial_angles, loop_weight, uniform_weight)
+    new_angles = l_bfgs_b_helper(vertex_obj, np.deg2rad(180), initial_angles, loop_weight, uniform_weight, maxiter, ftol, eps)
 
     
     # new_angles = minimize(obj_function_numpy, 
@@ -400,7 +401,7 @@ def annealing_optimiser_dec_helper(vertex_obj, uniform_angle, loop_weight, unifo
     
     for angle in np.arange(start_angle, end_angle - 1e-8, -step_rad):
         #print('inm', angle)
-        new_angles = l_bfgs_b_helper(vertex_obj, angle, new_angles.x,  loop_weight, uniform_weight)
+        new_angles = l_bfgs_b_helper(vertex_obj, angle, new_angles.x,  loop_weight, uniform_weight, maxiter, ftol, eps)
 
         # new_angles = minimize(obj_function_numpy, 
         #                  new_angles.x, 
@@ -484,7 +485,7 @@ def combined_obj(p_angles, vertex_obj, uniform_angle):
 def sector_angle_constraint(vertex_obj):
     pass
 
-def slsq(vertex_obj, uniform_angle):
+def slsq(vertex_obj, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15):
     num_edges = len(vertex_obj.surrounding_edges)
     constraints = [{
     'type': 'eq',
@@ -504,10 +505,10 @@ def slsq(vertex_obj, uniform_angle):
         constraints=constraints,
         bounds=[(np.deg2rad(0), np.deg2rad(180))] * num_edges,
         options={
-                    'maxiter': 100000,
+                    'maxiter': maxiter,
                     'disp': True,
-                    'ftol': 1e-14,
-                    'eps': 1e-15
+                    'ftol': ftol,
+                    'eps': eps
                 }
         )
     
@@ -515,7 +516,8 @@ def slsq(vertex_obj, uniform_angle):
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
-    bend_around_vertex(vertex_obj, new_angles.x)
+    return new_angles.x
+    #bend_around_vertex(vertex_obj, new_angles.x)
     
     #vertex_slsq(vertex_obj, new_angles.x)
     

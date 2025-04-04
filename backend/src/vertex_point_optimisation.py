@@ -73,7 +73,7 @@ def apply_vertices_around_vertex(vertex_points, vertex_obj):
     
 
  
-def objective_function(vertex_points, vertex_obj):
+def objective_function(vertex_points, vertex_obj, final=False):
     """
     Written to minimise stretching of edges.
     So minimise change is length of edge vectors 
@@ -88,6 +88,9 @@ def objective_function(vertex_points, vertex_obj):
         new_edge_vector = vertex_point_np - edge_obj.original_source_vertex
         new_length = np.linalg.norm(new_edge_vector)
         
+        if (final):
+            edge_obj.length = new_length
+        
         tots += np.abs(flat_length - new_length)
     
     if np.isnan(tots):
@@ -96,7 +99,7 @@ def objective_function(vertex_points, vertex_obj):
     return tots #+ objective_function_end_point_distances(vertex_points, vertex_obj)
 
 
-def objective_function_end_point_distances(vertex_points, vertex_obj):
+def objective_function_end_point_distances(vertex_points, vertex_obj, final=False):
     """
     This aims to fix the distance between end points (could also be done by fixing sector angle)
     For waterbomb base, this aims to fix the length of the boundary edges for example.
@@ -113,6 +116,8 @@ def objective_function_end_point_distances(vertex_points, vertex_obj):
         cos_theta = np.dot(new_edge_vector_i, new_edge_vector_prev_i) / ((np.linalg.norm(new_edge_vector_i) * np.linalg.norm(new_edge_vector_prev_i)) + 1e-8)
         curr_sector = np.arccos(np.clip(cos_theta, -1, 1))
         
+        if (final):
+            edge_obj.folded_sector_angle = f"{float(curr_sector):.{5}g}"
         # print('secs', np.rad2deg(sector_angle), np.rad2deg(curr_sector))
         totss += (sector_angle - curr_sector) ** 2
         
@@ -237,17 +242,19 @@ def jac_check_dihedral(vertex_points, angles, vertex_obj):
     return jac
 
 
-def vertex_slsq(vertex_obj, angles):
+def vertex_slsq(vertex_obj, angles, maxiter=300, ftol=1e-8, eps=1e-8):
     num_edges = len(vertex_obj.surrounding_edges)
     constraints = [{
     'type': 'eq',
     'fun': lambda h: np.abs(check_dihedral(h, angles, vertex_obj))
     # 'jac': lambda h: jac_check_dihedral(h, angles, vertex_obj)
-    }, {
+    }
+                   , {
     'type': 'ineq',
     'fun': lambda h: 1e-5 - np.abs(objective_function_end_point_distances(h, vertex_obj))
     # 'jac': lambda h: jac_objective_function_end_point_distances(h, vertex_obj)
-    } ]
+    } 
+                   ]
     
     ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
     start_vertices = get_starting_vertex_points(vertex_obj, angles)
@@ -260,20 +267,27 @@ def vertex_slsq(vertex_obj, angles):
         # jac=jac,
         constraints=constraints,
         options={
-                    'maxiter': 100,
+                    'maxiter': maxiter,
                     'disp': True,
-                    'ftol': 1e-8,
-                    'eps': 1e-8
+                    'ftol': ftol,
+                    'eps':eps
                 }
         )
     
     print(new_flat_vertices)
     apply_vertices_around_vertex(new_flat_vertices.x, vertex_obj)
-
     print('check', check_dihedral(new_flat_vertices.x, angles, vertex_obj))
     print('obj length', objective_function(new_flat_vertices.x, vertex_obj))
     print('sec size', objective_function_end_point_distances(new_flat_vertices.x, vertex_obj))
     print('Starting second')
+    
+    return( {
+        'check': check_dihedral(new_flat_vertices.x, angles, vertex_obj),
+        'obj_length': objective_function(new_flat_vertices.x, vertex_obj, final=True),
+        'sec_size': objective_function_end_point_distances(new_flat_vertices.x, vertex_obj, final=True)
+        }
+    )
+
 
     
     # constraints_second = [{

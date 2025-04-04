@@ -43,6 +43,25 @@ def T(b):
                     [0, 0, 1, b[2]],
                     [0, 0, 0, 1])
     
+def get_sector_angle(edge_obj):
+            """
+            if edge obj is i, then I want the sector angle between this and edge i-1
+            if the edge obj is edge 0, then the angle between this and the last edge
+            In counterclockwise
+            """
+            edges = edge_obj.parent_vertex.surrounding_edges
+
+            i = edge_obj.id[1]
+            prev_i = i+1 if i != len(edges)-1 else 0
+            
+            angle_i = edge_obj.angle_from_vertex
+            angle_prev = edges[prev_i].angle_from_vertex
+
+            sector_angle = (angle_i - angle_prev) % (2 * np.pi)
+
+            
+            return (2 * np.pi) - sector_angle 
+    
 
 #global plane's normal vector ... should be 0,0,1
 class SmoothFoldGeometry(CreasePattern):
@@ -285,6 +304,8 @@ class SmoothFoldPatternVertex:
         self.original_vertex = vertex
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
+        self.complete_edges_setup()
+        
         self.surrounding_faces = self.get_faces_surrounding_vertex() ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
         self.surrounding_angles = self.get_angles_surrounding_vertex() ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
         #self.enclosing_path = self.compute_simple_closed_path()
@@ -310,7 +331,7 @@ class SmoothFoldPatternVertex:
         # print(edge_pointers)
         unordered_edge = []
         count_edges = 0
-
+        
         
         ##make it a dict with key j,k
         
@@ -372,6 +393,11 @@ class SmoothFoldPatternVertex:
 
         return(sorted_edges)
                 
+    def complete_edges_setup(self):
+        for edge_obj in self.surrounding_edges:
+            edge_obj.sector_angle = f"{float(get_sector_angle(edge_obj)):.{5}g}"
+            edge_obj.folded_sector_angle = edge_obj.sector_angle
+            
     def get_face_between_edges(self, edge_1, edge_2):
         (adj, shared) = self.check_adjacent_edges(edge_1, edge_2)
         if adj:
@@ -559,8 +585,11 @@ class SmoothFoldPatternEdge:
         self.angle_from_vertex = angle_from_vertex #cummulative angle, later used to calculate alpha
         [self.faceR, self.faceL] = self.get_right_left_face(faceA, faceB)
         self.flat_length = self.get_flat_edge_length()
+        self.length = self.flat_length
+        self.sector_angle = None
+        self.folded_sector_angle = None
         
-        
+    
     def to_dict(self):
         return {
             "id": self.id,
@@ -573,7 +602,11 @@ class SmoothFoldPatternEdge:
             "angle": float(self.curve_angle),
             "faceL": self.faceL,
             "faceR": self.faceR,
-            "fold_type": self.fold_type
+            "fold_type": self.fold_type,
+            "flat_length": f"{float(self.flat_length):.{5}g}",
+            "length": f"{float(self.length):.{5}g}",
+            "flat_sector": f"{np.rad2deg(float(self.sector_angle)):.{5}g}",
+            "sector": f"{np.rad2deg(float(self.folded_sector_angle)):.{5}g}"
         }
         
     def calculate_direction_vector(self):
@@ -617,7 +650,6 @@ class SmoothFoldPatternEdge:
             elif two_d_cross(vector_from_source, self.direction_vector) < 0:
                 return([faceB, faceA])
                 
-            
         
     def width_after_curve(self, theta):
         curve_segment_1 = (1 - self.curve_strength) * self.flat_width

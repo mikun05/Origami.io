@@ -4,6 +4,14 @@ from scipy.spatial.transform import Rotation as R
 from smooth_fold_gens import SmoothFoldPattern, SmoothFoldGeometry, SmoothFoldPatternEdge, SmoothFoldPatternVertex
 from constraints import *
 
+def get_new_angles(vertex_obj):
+    new_angles = []
+    
+    for edge_obj in vertex_obj.surrounding_edges:
+        new_angles.append(edge_obj.curve_angle)
+    
+    return new_angles
+
 def get_direction_vector(edge_obj):
     """
     This gives the axis of rotation to be used in the Rodrigues Formula
@@ -74,6 +82,7 @@ def compute_transformations(vertex_obj, angle, start_edge):
         ##for each face, we move according to the angle assigned to the edge on its right.
         
         # left_edge_obj = surrounding_edges[0] if i == n-1 else surrounding_edges[i+1]
+        
         fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
         ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
         #ang =  (2 * np.pi) - fold_angle if  right_edge_obj.fold_type == "V" else fold_angle
@@ -84,7 +93,8 @@ def compute_transformations(vertex_obj, angle, start_edge):
         R = rodrigues_rotation_matrix(right_edge_obj, ang)
         
         #transforms[i] = T.copy()
-        transforms[i] =  transforms[i-1 % n] @ R
+        
+        transforms[i] =  transforms[(i-1 )% n] @ R
 
     return transforms
 
@@ -488,7 +498,59 @@ def update_edges_around_vertex(vertex_obj):
         edge_obj.update_edge()
         #print('length', edge_obj.length)
         ##print(edge_obj.curve_angle)
+
+def check_dihedral(post_fold_dihedrals, prefered_dihedrals, vertex_obj):
+    totsss = 0
+    for i in range(len(vertex_obj.surrounding_edges)):
+
+        diff = (post_fold_dihedrals[i] - prefered_dihedrals[i]) **2
+        # print('currc',curr_dihedral[i], new_angle)
+        totsss += np.sqrt(diff) if diff != 0 else 0
+
+    return totsss
+
+def check_edge_lengths(vertex_obj):
+    """
+    Written to minimise stretching of edges.
+    So minimise change is length of edge vectors 
+    Could also minimise over edges joining edge vectors
+    """
+    tots = 0
+
+    for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
+        flat_length = edge_obj.flat_length
+   
+        new_length = np.linalg.norm(edge_obj.edge_vector)
         
+        tots += np.abs(flat_length - new_length)
+
+    return tots
+
+def check_sector_size(vertex_obj):
+    """
+    This aims to fix the distance between end points (could also be done by fixing sector angle)
+    For waterbomb base, this aims to fix the length of the boundary edges for example.
+    """
+    totss = 0
+    
+    num_edges = len(vertex_obj.surrounding_edges)
+    
+    for (i, edge_obj) in enumerate(vertex_obj.surrounding_edges):
+        sector_angle = get_sector_angle(edge_obj)
+        new_edge_vector_i = np.array(edge_obj.edge_vector)
+        new_edge_vector_prev_i = vertex_obj.surrounding_edges[(edge_obj.id[1] + 1) % num_edges].edge_vector
+        
+        cos_theta = np.dot(new_edge_vector_i, new_edge_vector_prev_i) / ((np.linalg.norm(new_edge_vector_i) * np.linalg.norm(new_edge_vector_prev_i)) + 1e-8)
+        curr_sector = np.arccos(np.clip(cos_theta, -1, 1))
+        
+        # print('secs', np.rad2deg(sector_angle), np.rad2deg(curr_sector))
+        totss += (sector_angle - curr_sector) ** 2
+        
+    if np.isnan(totss):
+        print('SECTOR ANG CAUSES NAN')
+        
+    return totss
+      
         
 def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
     """
@@ -514,6 +576,17 @@ def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
     
     if update:
         update_edges_around_vertex(vertex_obj)
+    
+    new_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
+    prefered_angles = p_angle if isinstance(p_angle,(list, tuple, np.ndarray)) else [p_angle]*n
+    
+    return(
+        {
+        'check': check_dihedral(new_angles, prefered_angles, vertex_obj),
+        'obj_length': check_edge_lengths(vertex_obj),
+        'sec_size': check_sector_size(vertex_obj)
+        }
+    )
     
     
     #######OPTIMISER

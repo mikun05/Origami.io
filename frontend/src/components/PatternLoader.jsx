@@ -7,12 +7,15 @@ import axios from "axios";
 import PatternViewer from "./PatternViewer";
 import { PatternContext } from "../contexts/patternContext";
 import VertexViewer from "./VertexViewer";
+import ApproxOptions from "./ApproxOptions";
+import Options from "./Options";
+import Results from "./Results";
 
 export const backendLink = 'http://127.0.0.1:5000';
 
 
 const FoldVertexDialogue = (props) => {
-    const { focusedVertexIndex, setFoldPattern } = useContext(PatternContext);
+    const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults} = useContext(PatternContext);
     const [vertexPoint, setVertexPoint] = useState([0,0,0])
     const pattern = props.pattern
 
@@ -33,10 +36,20 @@ const FoldVertexDialogue = (props) => {
         const vertexIndex = focusedVertexIndex
         const angle = Number(formData.get('uniformFoldEdgesAroundVertexAngle'))
         const sym = Number(formData.get('uniformFoldEdgesAroundVertexSym'))
+
+        const angleApproxMeth = foldOptions.angleApproxMeth
+        const angleMaxIt = Number(foldOptions.angleMaxIt)
+        const angleFTol = Math.pow(10, -Number(foldOptions.angleFTol))
+        const angleEps = Math.pow(10, -Number(foldOptions.angleEps));
+        const vertexPointMeth = foldOptions.vertexPointMeth
+        const vertexMaxIt = Number(foldOptions.vertexMaxIt)
+        const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
+        const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym})
+        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps})
             .then(response => {
-                setFoldPattern(response.data);  
+                setFoldPattern(response.data.pattern); 
+                setFoldResults(response.data.approx_results);  
             })
             .catch(error => console.error("Error folding around vertex:", error));
     };
@@ -46,35 +59,34 @@ const FoldVertexDialogue = (props) => {
     return(
         <form method="post" onSubmit={handleFoldEdge}>
             <label>
-            Uniform Fold around <br></br><br></br>
+           
             <div style={{display: 'flex', flexDirection: 'row', gap: '1rem'}}>
-            <div>{focusedVertexIndex}.</div>
-            <div>x: {Math.round(vertexPoint[0] * 100) / 100} </div>
-            <div>y: {Math.round(vertexPoint[1] * 100) / 100} </div>
-            <div>z: {Math.round(vertexPoint[2] * 100) / 100} </div>
+            <div><strong>Vertex {focusedVertexIndex}:</strong></div>
+            <div><strong>{"("}{Math.round(vertexPoint[0] * 100) / 100} {","}</strong></div>
+            <div><strong>{Math.round(vertexPoint[1] * 100) / 100} {","}</strong></div>
+            <div><strong>{Math.round(vertexPoint[2] * 100) / 100}{")"}</strong></div>
             </div>
-            <br></br><br></br> by: <br></br>
-            Angle: <input name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={180} min="0" max="180" required style={{width: '3rem'}}/>°
-            <br></br>
-            Sym: <input name="uniformFoldEdgesAroundVertexSym" type="number" defaultValue={0.5} step="0.1" min="0" max="1" required style={{width: '2.5rem'}}/>
-            {/* <br></br>
-            <hr />
-                <label>
-                    Fix Edges around vertex: <input type="checkbox" name="fixEdgesAroundVertex" />
-                </label>
-            <hr /> */}
+            Uniform(ish) Fold by: <br></br>
+            <input onChange={(e) => setUniformAngle(e.target.value)}name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={uniformAngle} min="0" max="180" required style={{width: '1.5rem'}}/>°
             </label>
-            <br></br> <br></br>
+            <br></br><br></br>
             <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
-                <button type="submit" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
+                <button type="submit" style={{height: '2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
             </div>
         </form>
     )
 }
 
 const FoldEdgeDialogue = (props) => {
-    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern } = useContext(PatternContext)
-    const [currentAngle, setCurrentAngle] = useState(180)
+    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern, setUniformAngle } = useContext(PatternContext)
+    const [currentAngle, setCurrentAngle] = useState(null)
+    const [sectorAngle, setSectorAngle] = useState(null)
+    const [flatSectorAngle, setflatSectorAngle] = useState(null)
+    const [length, setLength] = useState(null)
+    const [flatLength, setFlatLength] = useState(null)
+
+
+
     const [foldType, setFoldType] = useState('B')
     const [relativeEdgeIndex, setRelativeEdgeIndex] = useState(0)
 
@@ -93,6 +105,11 @@ const FoldEdgeDialogue = (props) => {
             setCurrentAngle( Math.round(response.data['angle'] * (180/Math.PI) * 100) / 100);
             setFoldType(response.data['fold_type'])
             setRelativeEdgeIndex(response.data['id'][1])
+            setFlatLength(response.data['flat_length'])
+            setLength(response.data['length'])
+            setflatSectorAngle(response.data['flat_sector'])
+            setSectorAngle(response.data['sector'])
+
         })
         .catch(error => console.error("Error fetching angle data:", error));
     }, [focusedEdgeIndex, focusedVertexIndex])
@@ -127,12 +144,14 @@ const FoldEdgeDialogue = (props) => {
     return(
         <form method="post" onSubmit={handleFoldEdge}>
             <label>
-            Fold around {foldType == 'M' ? 'Mountain' : 'Valley'} edge {relativeEdgeIndex} by: <br></br>
-            Angle: <input name="foldEdge" type="number" value={currentAngle} onChange={handleAngleChange} min="0" max="180" required style={{width: '3rem'}}/>°
+            <strong>{foldType == 'M' ? 'Mountain' : 'Valley'} Edge {relativeEdgeIndex}<br></br></strong>
+            Dihedral Angle: <input name="foldEdge" type="number" value={currentAngle} onChange={handleAngleChange} min="0" max="180" required style={{width: '3rem'}}/>°<br></br>
+            Flat Sector Angle: {flatSectorAngle}°<br></br>
+            Sector Angle: {sectorAngle}°<br></br>
+            Flat Length: {flatLength}<br></br>
+            Current Length:  {length}<br></br>
             <br></br>
-            Sym: <input name="foldSym" type="number" defaultValue={0.5} step="0.1" min="0" max="1" required style={{width: '2.5rem'}}/>
             </label>
-            <br></br>
             <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
                 <button type="submit" style={{height: '2.2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
             </div>
@@ -141,8 +160,18 @@ const FoldEdgeDialogue = (props) => {
 }
 
 const PatternLoader = () => {
-    const { focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex} = useContext(PatternContext);
-
+    const { foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle} = useContext(PatternContext);
+    // const [foldOptions, setFoldOptions] = useState({
+    //     angleApproxMeth: '',
+    //     angleMaxIt:'',
+    //     angleFTol:'',
+    //     angleEps:'',
+    //     vertexApproxMeth: '',
+    //     vertexMaxIt:'',
+    //     vertexFTol:'',
+    //     vertexEps:'',
+        
+    // })
     useEffect(() => {
         fetchFoldPattern();
     }, []);
@@ -164,6 +193,7 @@ const PatternLoader = () => {
     };
 
     const resetPattern = () => {
+        setUniformAngle(180)
         axios.get(`${backendLink}/reset-pattern`)
         .then(response => {
             setFoldPattern(response.data);  // Reset to pre-fold configuraton
@@ -171,10 +201,11 @@ const PatternLoader = () => {
         .catch(error => console.error("Error resetting pattern:", error));
     }
 
+
     return (
         <div>    
             {foldPattern ? (
-                <div style={{display: 'flex', flexDirection: 'column', width: '80rem', height: '50rem', margin: 'auto', gap: '1rem' }}>
+                <div style={{display: 'flex', flexDirection: 'column', height: '50rem', margin: 'auto', padding:'0rem 2rem', gap: '1rem' }}>
                     <br></br>
                     <br></br>
 
@@ -187,50 +218,34 @@ const PatternLoader = () => {
                             <br></br><br></br>
                             {(focusedEdgeIndex !== null) ? <FoldEdgeDialogue  /> : <></>}
                             <VertexViewer vertexIndex={focusedVertexIndex} pattern={foldPattern}/>
+                            <br></br><br></br><br></br>
+                            <button onClick={resetPattern} style={{height: '3rem', margin: 'auto', }}>Reset Fold Pattern</button>
+
                         </div>
 
 
-                        <div  style={{ width: '50rem', height: '30rem', backgroundColor: '#fc6c8530', margin:'auto'}}>
+                        <div  style={{ width: '50rem', height: '40rem', backgroundColor: '#E2DCCB', margin:'auto'}}>
                             <Canvas >
                                 <PatternViewer pattern={foldPattern} />
                             </Canvas>
                         </div>
 
+                        <ApproxOptions />
+                        <div style={{flexDirection: 'column', gap:'2rem'}}>
+                            <Options />
+                            <br></br><br></br>
+                            <Results />
+                        </div>
+                        
+
                         
                     </div>
 
-                    <div style={{display: 'flex', flexDirection: 'row', width:'60rem', gap: '1rem', margin:'auto' }}> 
-                        {/* <div style={{display: 'flex', flexDirection: 'column', width:'15rem', gap: '1rem' }}>
-                            <p>Test Cases: <br></br>Fold first valley fold from left by 90 degrees:</p>
-                            <button onClick={() => handleFoldEdge(1, 0, 90, 0.5)}>
-                                evenly (0.5)
-                            </button>
-
-                            <button onClick={() => handleFoldEdge(1, 0, 90, 1)}>
-                                right face fold (1)
-                            </button>
-
-                            <button onClick={() => handleFoldEdge(1, 0, 90, 0)}>
-                                left face fold (0)
-                            </button>
-                        </div>
-
-                        <div style={{display: 'flex', flexDirection: 'column', width:'15rem', gap: '1rem' }}>
-                            <p>Test Cases: <br></br>Fold second mountain fold from left by 45 degrees:</p>
-                            <button onClick={() => handleFoldEdge(2, 0, 45, 0.5)}>
-                                evenly (0.5)
-                            </button>
-
-                            <button onClick={() => handleFoldEdge(2, 0, -45, 0.7)}>
-                                right:0.7, left:0.3
-                            </button>
-
-                            <button onClick={() => handleFoldEdge(2, 0, -45, 0.2)}>
-                                right:0.2, left:0.8
-                            </button>
-                        </div> */}
-
-                        <button onClick={resetPattern} style={{height: '4rem', margin: 'auto'}}>Reset Fold Pattern</button>
+                    <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'80rem', gap: '1rem', margin:'auto' }}> 
+                            <div>Loop Closure</div>
+                            <div>Sector Angles Deviations</div>
+                            <div>Dihedral Angle Deviation</div>
+                            <div>Edge Length Deviation</div>
                     </div>
                 </div>
             ) : (

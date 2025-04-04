@@ -4,8 +4,8 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #293752;
+  background-color: #EEEEEA;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -40,16 +40,49 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #112883;
   cursor: pointer;
   transition: border-color 0.25s;
+  border-radius:2rem;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #5868a8;
+  border-width: 0.15rem;
 }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+button:active {
+  background-color: #5868a8
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+th {
+  border: 0.1rem solid;
+  width: 5rem;
+  
+}
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+input {
+  background-color: #EEEEEA;
+  border: #000000;
+  color: #000000
+}
+
+select {
+  background-color: #00000020;
+  border: #000000;
+  color: #000000
 }
 
 @media (prefers-color-scheme: light) {

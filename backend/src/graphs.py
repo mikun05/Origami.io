@@ -112,7 +112,7 @@ while num_iterations > 0:
     angle_rad = np.deg2rad(angle_deg)
     
     angle_results = l_bfgs_b_helper(vertex_obj, angle_rad, [angle_rad] * num_edges, loop_weight, uniform_weight)
-    dist_from_identity = np.sqrt(tachi_constraints_vertex_level_inputted(vertex_obj, angle_results.x)) #check against dist to I for loop closure only
+    dist_from_identity = np.sqrt(tachi_constraints_vertex_level_inputted(vertex_obj, angle_results.x)[1]) #check against dist to I for loop closure only
     
     count = 0
     for angle in angle_results.x:

@@ -7,6 +7,7 @@ import numpy as np
 from smooth_fold_gens import *
 from edge_fold import *
 from angle_optimisation import *
+from approximisation_process import *
 
 app = Flask(__name__)
 CORS(app)
@@ -305,22 +306,44 @@ def fold_edges_around_vertex():
     vertex_index = data.get("vertexIndex")
     angle = data.get("angle")
     sym = data.get("sym")
+    
+    print('app',data.get("angleApproxMeth"), "LBFGS" )
+    angleApprox_info = {
+        'angleApproxMeth': data.get("angleApproxMeth", "LBFGS"),
+        'angleMaxIt': data.get("angleMaxIt", 200000),
+        'angleFTol': data.get("angleFTol", 1e-15),
+        'angleEps': data.get("angleEps", 1e-14),
+    }
+   
+
+    vertexApprox_info = {
+        'vertexPointMeth': data.get("vertexPointMeth", "Rot"),
+        'vertexMaxIt': data.get("vertexMaxIt", 300),
+        'vertexFTol': data.get("vertexFTol", 1e-8),
+        'vertexEps': data.get("vertexEps", 1e-8),
+    }
+
 
     if angle is None or vertex_index is None or sym is None:
         return jsonify({"error": "Missing parameters"}), 400
 
     converted_angle = np.deg2rad(angle)
     
-    l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
+    results = approx_process(angleApprox_info, vertexApprox_info, pattern.vertex_objects[vertex_index], converted_angle)
+    #l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
         
  
     
+    
     pattern_dict = pattern.to_dict()
     print('fold', pattern_dict['fold_format'][0]['vertices'])
-
-    return jsonify(pattern_dict)
+    fold_output = {
+        'pattern': pattern_dict,
+        'approx_results': results
+    }
+    return jsonify(fold_output)
 
     
     
