@@ -1,3 +1,6 @@
+/* eslint-disable no-unused-vars */
+ /* eslint-disable react/prop-types */
+/* eslint-disable react/no-unknown-property */
 import { useContext } from "react";
 
 import { PatternContext } from "../contexts/patternContext";
@@ -5,16 +8,17 @@ import axios from "axios";
 import { backendLink } from "./PatternLoader";
 
 
-const Options = () => {
+const Options = (props) => {
     const {foldPattern, setFoldPattern} = useContext(PatternContext)
 
     const updateFoldPattern = (e) => {
         console.log(e)
         const patternId = e.target.value
-       
+    
 
         axios.post(`${backendLink}/get-fold-pattern`, { patternId })
         .then(response => {
+            props.changeSetUp(true)
             setFoldPattern(response.data); 
         })
         .catch(error => console.error("Error fetching pattern data:", error));

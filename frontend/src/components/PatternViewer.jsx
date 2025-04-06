@@ -275,21 +275,30 @@ const PatternViewer = (props) => {
         edge_colors[startIdx + 5] = edge_type[2];
     }
     
-    const tri  = [];
+    const [triangles, setTriangles] = useState(new Uint16Array([]))
+
+    useEffect(() => {
+        if (props.setUp) {
+            console.log('recoloring')
+            const tri  = [];
+        
+            faces.forEach(face => {
+              const contour = face.map(i => [vertices[3 * i], vertices[(3*i) + 1]]);
+              const flat = contour.flat(); 
+              const triangulated = earcut(flat);
+              for (let i = 0; i < triangulated.length; i += 3) {
+                const a = face[triangulated[i]];
+                const b = face[triangulated[i + 1]];
+                const c = face[triangulated[i + 2]];
+                tri.push(a, b, c);
+              }
+            });
+            
+            setTriangles(new Uint16Array(tri))
+        }
+    }, [props.pattern])
+
     
-    faces.forEach(face => {
-      const contour = face.map(i => [vertices[3 * i], vertices[(3*i) + 1]]);
-      const flat = contour.flat(); 
-      const triangulated = earcut(flat);
-      for (let i = 0; i < triangulated.length; i += 3) {
-        const a = face[triangulated[i]];
-        const b = face[triangulated[i + 1]];
-        const c = face[triangulated[i + 2]];
-        tri.push(a, b, c);
-      }
-    });
-    
-    const triangles = new Uint16Array(tri)
     
       
     console.log('ed',edge_colors)

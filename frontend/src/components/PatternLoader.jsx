@@ -48,6 +48,7 @@ const FoldVertexDialogue = (props) => {
         
         axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps})
             .then(response => {
+                props.changeSetUp(false)
                 setFoldPattern(response.data.pattern); 
                 setFoldResults(response.data.approx_results);  
             })
@@ -161,24 +162,16 @@ const FoldEdgeDialogue = (props) => {
 
 const PatternLoader = () => {
     const { foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle} = useContext(PatternContext);
-    // const [foldOptions, setFoldOptions] = useState({
-    //     angleApproxMeth: '',
-    //     angleMaxIt:'',
-    //     angleFTol:'',
-    //     angleEps:'',
-    //     vertexApproxMeth: '',
-    //     vertexMaxIt:'',
-    //     vertexFTol:'',
-    //     vertexEps:'',
-        
-    // })
+    const [setUp, changeSetUp] = useState(false)
+
     useEffect(() => {
         fetchFoldPattern();
     }, []);
 
     const fetchFoldPattern = () => {
-        axios.post(`${backendLink}/get-fold-pattern`, { patternId: 'bel_fig_2' })
+        axios.post(`${backendLink}/get-fold-pattern`, { patternId: 'wbb' })
             .then(response => {
+                changeSetUp(true)
                 setFoldPattern(response.data);
             })
             .catch(error => console.error("Error fetching pattern data:", error));
@@ -187,6 +180,7 @@ const PatternLoader = () => {
     const handleFoldEdge = (vertexIndex, edgeIndex, angle, sym) => {
         axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym })
             .then(response => {
+                changeSetUp(false)
                 setFoldPattern(response.data);  // Update with new fold state
             })
             .catch(error => console.error("Error folding edge:", error));
@@ -196,6 +190,7 @@ const PatternLoader = () => {
         setUniformAngle(180)
         axios.get(`${backendLink}/reset-pattern`)
         .then(response => {
+            changeSetUp(true)
             setFoldPattern(response.data);  // Reset to pre-fold configuraton
         })
         .catch(error => console.error("Error resetting pattern:", error));
@@ -214,7 +209,7 @@ const PatternLoader = () => {
                         <div style={{ width:'15rem'}}>
                             <h2 style={{margin: 'auto'}}>Fold Pattern Viewer</h2>
                             <br></br>
-                            {(focusedVertexIndex !== null) ? <FoldVertexDialogue pattern={foldPattern} /> : <></>}
+                            {(focusedVertexIndex !== null) ? <FoldVertexDialogue pattern={foldPattern} changeSetUp={changeSetUp}/> : <></>}
                             <br></br><br></br>
                             {(focusedEdgeIndex !== null) ? <FoldEdgeDialogue  /> : <></>}
                             <VertexViewer vertexIndex={focusedVertexIndex} pattern={foldPattern}/>
@@ -226,13 +221,13 @@ const PatternLoader = () => {
 
                         <div  style={{ width: '50rem', height: '40rem', backgroundColor: '#E2DCCB', margin:'auto'}}>
                             <Canvas >
-                                <PatternViewer pattern={foldPattern} />
+                                <PatternViewer pattern={foldPattern} setUp={setUp}/>
                             </Canvas>
                         </div>
 
                         <ApproxOptions />
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
-                            <Options />
+                            <Options setUp={setUp} changeSetUp={changeSetUp} />
                             <br></br><br></br>
                             <Results />
                         </div>
