@@ -120,7 +120,7 @@ twist ={
 }
 
 #Single Vertexed
-water_bomb_base_fold_data = {
+wbb = { #waterbomb base
             "vertices_coords": [
                 [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
             ],
@@ -150,7 +150,7 @@ other_traingle = {
             ]
         }
 
-book_fold = {
+bf= { #book fold
     "vertices_coords": [
                 [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
     ],
@@ -165,7 +165,7 @@ book_fold = {
     ]
 }
 
-miura_ori_fold = {
+mo_single = { #muira ori fold single vertex
     "vertices_coords": [
         [-10,-4,0], [-4,-4,0], [2,-4,0], [-6,0,0], [0,0,0], [6,0,0], [-10,4,0], [-4,4,0], [2,4,0]
     ],
@@ -198,7 +198,7 @@ two_miura_ori_fold = {
 }
 
 belcastro_fig_2 = {
-     "vertices_coords": [
+    "vertices_coords": [
         [0,0,0], [10,0,0], [10,10,0], [0,10,0], [-10,10,0], [-10,0,0], [-10,-10,0], [0,-10,0], [10,-10,0]
     ],
     "edges_vertices": [
@@ -213,13 +213,32 @@ belcastro_fig_2 = {
 }
 
 
+all_patterns = {
+    'wbb': wbb,
+    'bf': bf,
+    'mo_single': mo_single,
+    'bel_fig_2': belcastro_fig_2
+}
 
-example_fold_data = water_bomb_base_fold_data
-pattern = SmoothFoldPattern(example_fold_data)
 
-@app.route('/get-fold-pattern', methods=['GET'])
+
+global pattern, patternId
+pattern = SmoothFoldPattern(belcastro_fig_2)
+
+@app.route('/get-fold-pattern', methods=['POST'])
 def get_fold_pattern():
     """API route to get the current fold pattern."""
+    global pattern, patternId
+    data = request.json
+    patternId = data.get("patternId")
+    
+    print('patternid')
+    print('patternId', patternId)
+    if patternId is None:
+        pattern = SmoothFoldPattern('bel_fig_2')
+        
+    pattern = SmoothFoldPattern(all_patterns[patternId])
+
     pattern_dict = pattern.to_dict()
     print('p', pattern_dict['fold_format'][0]['vertices'])
     return jsonify(pattern_dict)
@@ -350,8 +369,8 @@ def fold_edges_around_vertex():
 @app.route('/reset-pattern', methods=['GET'])
 def reset_pattern():
     """API route to fold an edge by a given angle and according to a given symmetry"""
-    global pattern
-    pattern = SmoothFoldPattern(example_fold_data)
+    global pattern, patternId
+    pattern = SmoothFoldPattern(all_patterns[patternId])
     pattern_dict = pattern.to_dict()
     print('reset', pattern_dict['fold_format'][0]['vertices'])
 

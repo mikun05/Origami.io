@@ -7,7 +7,7 @@ import { EdgeColor, VertexColor, VertexSizes } from './PatternViewerStates';
 import { PointMaterial } from '@react-three/drei'
 import { useThree } from '@react-three/fiber';
 import { PatternContext } from '../contexts/patternContext';
-import { Earcut } from 'three/src/extras/Earcut.js'
+import earcut from 'earcut';
 
 //how much code, language, commits and so on
 const CameraSetUp = (props) => {
@@ -203,7 +203,7 @@ const PatternViewer = (props) => {
     const vertices = new Float32Array(props.pattern['fold_format'][0]['vertices'].flat()) //only thing subject to change after foldings
     const edges = new Uint16Array(props.pattern['fold_format'][0]['edges'].flat())
     const edge_assignments = props.pattern['fold_format'][0]['edges_assignments']
-    const faces = new Uint16Array(props.pattern['fold_format'][0]['faces'].flat())
+    const faces = props.pattern['fold_format'][0]['faces']
 
 
     const pointsRef = useRef();
@@ -274,6 +274,22 @@ const PatternViewer = (props) => {
         edge_colors[startIdx + 4] = edge_type[1];
         edge_colors[startIdx + 5] = edge_type[2];
     }
+    
+    const tri  = [];
+    
+    faces.forEach(face => {
+      const contour = face.map(i => [vertices[3 * i], vertices[(3*i) + 1]]);
+      const flat = contour.flat(); 
+      const triangulated = earcut(flat);
+      for (let i = 0; i < triangulated.length; i += 3) {
+        const a = face[triangulated[i]];
+        const b = face[triangulated[i + 1]];
+        const c = face[triangulated[i + 2]];
+        tri.push(a, b, c);
+      }
+    });
+    
+    const triangles = new Uint16Array(tri)
     
       
     console.log('ed',edge_colors)
@@ -474,7 +490,7 @@ const PatternViewer = (props) => {
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                         <bufferAttribute attach="attributes-color" args={[top_face_colors, 3]} />
-                        <bufferAttribute attach="index" args={[faces, 1]} />
+                        <bufferAttribute attach="index" args={[triangles,   1]} />
                     </bufferGeometry>
                     <meshBasicMaterial color={'#5868a8'} wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
                 </mesh>
@@ -483,7 +499,7 @@ const PatternViewer = (props) => {
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                         <bufferAttribute attach="attributes-color" args={[bottom_face_colors, 3]} />
-                        <bufferAttribute attach="index" args={[faces, 1]} />
+                        <bufferAttribute attach="index" args={[triangles, 1]} />
                     </bufferGeometry>
                     <meshBasicMaterial color={'white'} wireframe={false} side={THREE.BackSide}/>
                 </mesh>

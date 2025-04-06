@@ -177,7 +177,7 @@ const PatternLoader = () => {
     }, []);
 
     const fetchFoldPattern = () => {
-        axios.get(`${backendLink}/get-fold-pattern`)
+        axios.post(`${backendLink}/get-fold-pattern`, { patternId: 'bel_fig_2' })
             .then(response => {
                 setFoldPattern(response.data);
             })

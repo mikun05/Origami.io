@@ -2,6 +2,11 @@ import numpy as np
 from edge_fold import *
 from scipy.optimize import minimize
 
+def de_flatten(vertex_points, vertex_obj):
+    num_edges = len(vertex_obj.surrounding_edges)
+    unflattened_vertex_points = np.array_split(np.array(vertex_points), num_edges)
+    return unflattened_vertex_points
+    
 
 def get_adjacent_edges(vertex_points, index, vertex_obj):
     n = len(vertex_obj.surrounding_edges)
@@ -209,36 +214,32 @@ def check_dihedral(vertex_points, angles, vertex_obj):
         new_angle = get_new_dihedral_angle(left_edge_vec, edge_vec, right_edge_vec)
         diff = (angles[i] - new_angle) **2
         # print('currc',curr_dihedral[i], new_angle)
-        totsss += np.sqrt(diff) if diff != 0 else 0
+        totsss += diff#np.sqrt(diff) if diff != 0 else 0
         
     if np.isnan(totsss):
         print('DIHEDRAL ANG CAUSES NAN')
     return totsss
 
 def jac_check_dihedral(vertex_points, angles, vertex_obj):
-    jac = np.zeros(len(vertex_points))
+    num_edges = len(vertex_obj.surrounding_edges)
+    jac = [0] * len(vertex_points)
     
     epsilon = 1e-6  # finite difference step
     
-    for i in range(len(vertex_points)):
-        # Perturb one variable at a time
-        step = np.zeros_like(vertex_points)
-        step[i] = epsilon
+    for i in range(num_edges):
+        [left_edge_vec, edge_vec, right_edge_vec] = get_adjacent_edges(vertex_points, i, vertex_obj)
+        new_angle = get_new_dihedral_angle(left_edge_vec, edge_vec, right_edge_vec)
+        diff = (angles[i] - new_angle)
         
-        plus = vertex_points + step
-        minus = vertex_points - step
+        n1 = np.cross(left_edge_vec ,edge_vec) / (np.linalg.norm(np.cross(left_edge_vec ,edge_vec)) + 1e-8)
+        n2 = np.cross(edge_vec ,right_edge_vec) / (np.linalg.norm(np.cross(edge_vec ,right_edge_vec)) + 1e-8)
         
-        apply_vertices_around_vertex(plus, vertex_obj)
-        dihedral_plus = [a.item() for a in get_new_angles(vertex_obj)]
         
-        apply_vertices_around_vertex(minus, vertex_obj)
-        dihedral_minus = [a.item() for a in get_new_angles(vertex_obj)]
-        
-        # Derivative of each angle wrt this variable
-        grad_i = (np.array(dihedral_plus) - np.array(dihedral_minus)) / (2 * epsilon)
-        
-        jac[:, i] = -grad_i  # because constraint is angles[i] - theta_i(x)
+        elem = (2*diff) * (1/np.sqrt(1-np.dot(n1, n2))) * (np.dot(n2, (n1 * edge_vec)) + np.dot(n1, (n2 * edge_vec)))
+        jac[i*3 : (i+1)*3] += elem
 
+    #print('checkjac', jac)
+    print('.')
     return jac
 
 
@@ -246,8 +247,8 @@ def vertex_slsq(vertex_obj, angles, maxiter=300, ftol=1e-8, eps=1e-8):
     num_edges = len(vertex_obj.surrounding_edges)
     constraints = [{
     'type': 'eq',
-    'fun': lambda h: np.abs(check_dihedral(h, angles, vertex_obj))
-    # 'jac': lambda h: jac_check_dihedral(h, angles, vertex_obj)
+    'fun': lambda h: np.abs(check_dihedral(h, angles, vertex_obj)),
+    'jac': lambda h: jac_check_dihedral(h, angles, vertex_obj)
     }
                    , {
     'type': 'ineq',
