@@ -2,10 +2,14 @@
 /* eslint-disable react/prop-types */
 import { useContext, useEffect, useState } from 'react';
 import { PatternContext } from '../contexts/patternContext';
+import axios from "axios";
+export const backendLink = 'http://127.0.0.1:5000';
+
 
 const VertexViewer = (props) => {
     const { focusedVertexIndex, setFocusedVertexEdges, focusedVertexEdges } = useContext(PatternContext);
     const [surroundEdges, setSurroundingEdges] = useState(null)
+    const [fetchVertexInfo, setVertexInfo] = useState(null)
 
     const pattern = props.pattern
 
@@ -29,20 +33,22 @@ const VertexViewer = (props) => {
     }, [focusedVertexEdges])
 
 
-    // const fetchFoldVertex = (vertexIndex) => {
-    //     console.log('getting', vertexIndex)
-    //     axios.get(`${backendLink}/get-vertex-info`, { params: {vertexIndex} })
-    //         .then(response => {
-    //             setFocusedVertex(response.data);
-    //         })
-    //         .catch(error => console.error("Error fetching vertex data:", error));
-    // };
+    const fetchFoldVertex = (vertexIndex) => {
+        console.log('getting', vertexIndex)
+        axios.get(`${backendLink}/get-vertex-info`, { params: {vertexIndex} })
+            .then(response => {
+                setVertexInfo(response.data);
+            })
+            .catch(error => console.error("Error fetching vertex data:", error));
+    };
 
     const vertexInfo = () => {
         const [x, y, z] = pattern['fold_format'][0]['vertices'][focusedVertexIndex]
 
         const surround_edges = surroundEdges ? surroundEdges.map(edge_obj => edge_obj['edge_pointer']) : []
 
+        const boundary = fetchVertexInfo['boundary']
+        console.log(boundary)
         
         return(
             <div>
@@ -53,6 +59,7 @@ const VertexViewer = (props) => {
                     {surround_edges.map((edge, index) => {
                         return <p key={`${edge[0]}-${edge[1]}-${index}`}>{`${index}: Vtx ${edge[0]} to Vtx ${edge[1]}`}</p>;
                     })}
+                <p>Boundary</p>: {boundary}
             </div>
            
         )

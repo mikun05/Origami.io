@@ -15,16 +15,31 @@ CORS(app)
 
 three_square_fold_data = { 
             "vertices_coords": [
-                [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0]
+                [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0], [10,5,0], [20,5,0]
             ],
             "edges_vertices": [
-                [0, 4], [0, 1], [4, 5], [1, 5], [1,2], [5,6], [2,6], [2,3], [6,7], [3,7]
+                [0, 4], [0, 1], [4, 5], [1, 8],[8,5], [1,2], [5,6], [2,9], [9,6], [2,3], [6,7], [3,7]
             ],
             "faces_vertices": [
-                [0,1,5,4], [1,2,6,5], [2,3,7,6]
+                [0,1,8,5,4], [1,2,9,6,5,8], [2,3,7,6,9]
             ],
             "edges_assignment": [
-                "B", "B", "B", "V", "B", "B", "M", "B", "B", "B"
+                "B", "B", "B", "V", "V", "B", "B", "M", "M", "B", "B", "B"
+            ]
+        }
+
+four_square_fold_data = { 
+            "vertices_coords": [
+                [0, 0, 0], [10, 0, 0], [20, 0, 0], [30, 0, 0], [0, 10, 0], [10, 10, 0], [20, 10, 0], [30, 10, 0], [10,5,0], [20,5,0], [40,0,0], [40,10,0], [40,5,0], [30,5,0]
+            ],
+            "edges_vertices": [
+                [0, 4], [0, 1], [4, 5], [1, 8],[8,5], [1,2], [5,6], [2,9], [9,6], [2,3], [6,7], [3,13],[13,7], [7,10],[3,11], [10,12], [12,11]
+            ],
+            "faces_vertices": [
+                [0,1,8,5,4], [1,2,9,6,5,8], [2,3,13,7,6,9], [3,11,12,10,7,13]
+            ],
+            "edges_assignment": [
+                "B", "B", "B", "V", "V", "B", "B", "M", "M", "B", "B", "V","V", "B", "B", "B", "B"
             ]
         }
 
@@ -150,18 +165,19 @@ other_traingle = {
             ]
         }
 
-bf= { #book fold
+bf = { 
     "vertices_coords": [
-                [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
+        [0, 20, 0], [20, 20, 0], [20, 10, 0], [20, 0, 0], [0, 0, 0], [0, 10, 0], [10, 10, 0]
+       # [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
     ],
     "edges_vertices": [
-        [0, 1], [0, 5], [1,2], [5,6], [5,4], [6,2], [2,3], [4,3]
+        [0, 1], [0, 5], [1, 2], [5, 6], [5, 4], [6, 2], [2, 3], [4, 3]
     ],
     "faces_vertices": [
-        [6,2,1,0,5], [6,5,4,3,2]
+        [6, 2, 1, 0, 5], [6, 5, 4, 3, 2]
     ],
     "edges_assignment": [
-        "B", "B", "B", "V", "B", "V", "B", "B"
+        "B", "B", "B", "M", "B", "M", "B", "B"
     ]
 }
 
@@ -193,7 +209,7 @@ two_miura_ori_fold = {
         [4,7,6,3], [4,5,8,7], [4,3,0,1], [4,1,2,5],[5,2,11,10], [5,10,9,8]
     ],
     "edges_assignment": [
-        "B", "B", "M", "V", "B", "B", "B", "M", "M", "B", "M", "M", "M", "B", "B", "B", "B"
+        "B", "B", "M", "V", "B", "B", "B", "V", "M", "B", "V", "M", "M", "B", "B", "B", "B"
     ]
 }
 
@@ -217,13 +233,17 @@ all_patterns = {
     'wbb': wbb,
     'bf': bf,
     'mo_single': mo_single,
-    'bel_fig_2': belcastro_fig_2
+    'bel_fig_2': belcastro_fig_2,
+    'mo_double': two_miura_ori_fold,
+    'three_sq': three_square_fold_data,
+    'four_sq': four_square_fold_data
 }
 
 
 
 global pattern, patternId
-pattern = SmoothFoldPattern(belcastro_fig_2)
+patternId = 'wbb'
+pattern = SmoothFoldPattern(wbb)
 
 @app.route('/get-fold-pattern', methods=['POST'])
 def get_fold_pattern():
@@ -235,7 +255,8 @@ def get_fold_pattern():
     print('patternid')
     print('patternId', patternId)
     if patternId is None:
-        pattern = SmoothFoldPattern('bel_fig_2')
+        patternId = 'wbb'
+        pattern = SmoothFoldPattern(wbb)
         
     pattern = SmoothFoldPattern(all_patterns[patternId])
 
@@ -305,11 +326,13 @@ def fold_edge():
         return jsonify({"error": "Missing parameters"}), 400
 
     converted_angle = np.deg2rad(angle)
-    bend_edge(edge_obj_rel_vertex, converted_angle, sym)
+    vertex_obj = pattern.vertex_objects[vertex_index]
+
+    slsq_specific_edge(pattern.vertex_objects, vertex_index, converted_angle, edge_obj_rel_vertex.id[1], maxiter=200, ftol=1e-10, eps=1e-15) #bend_edge(edge_obj_rel_vertex, converted_angle, sym)
     
-    for vertex_obj in pattern.vertex_objects:
-        for edge_obj in vertex_obj.surrounding_edges:
-            edge_obj.update_edge()
+    # for vertex_obj in pattern.vertex_objects:
+    #     for edge_obj in vertex_obj.surrounding_edges:
+    #         edge_obj.update_edge()
     
     pattern_dict = pattern.to_dict()
     print('fold', pattern_dict['fold_format'][0]['vertices'])
@@ -326,9 +349,9 @@ def fold_edges_around_vertex():
     angle = data.get("angle")
     sym = data.get("sym")
     
-    print('app',data.get("angleApproxMeth"), "LBFGS" )
+    print('app',data.get("angleApproxMeth"), "SQP" )
     angleApprox_info = {
-        'angleApproxMeth': data.get("angleApproxMeth", "LBFGS"),
+        'angleApproxMeth': data.get("angleApproxMeth", "SQP"),
         'angleMaxIt': data.get("angleMaxIt", 200000),
         'angleFTol': data.get("angleFTol", 1e-15),
         'angleEps': data.get("angleEps", 1e-14),
@@ -348,7 +371,7 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    results = approx_process(angleApprox_info, vertexApprox_info, pattern.vertex_objects[vertex_index], converted_angle)
+    results = approx_process(angleApprox_info, vertexApprox_info, vertex_index, pattern.vertex_objects, converted_angle)
     #l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)

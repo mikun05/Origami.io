@@ -11,9 +11,9 @@ function App() {
   const [focusedEdgeIndex, setFocusedEdgeIndex] = useState(null);
   const [foldPattern, setFoldPattern] = useState(null);
   const [foldOptions, setFoldOptions] = useState({
-    angleApproxMeth: 'LBFGS',
+    angleApproxMeth: 'SQP',
     angleMaxIt:200000,
-    angleFTol:15,
+    angleFTol:10,
     angleEps:14,
     vertexPointMeth: 'Rot',
     vertexMaxIt:300,

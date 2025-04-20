@@ -444,6 +444,15 @@ def objective_uniformity_mean(angles, uniform_angle):
         count += angle
     return np.sqrt((count / len(angles) - uniform_angle) ** 2)
 
+def ssd_objective_angles(angles, uniform_angle, n, main_vertex_indices):
+    ssd = 0
+    for angle in angles[main_vertex_indices: main_vertex_indices+n]:
+        ssd += (angle - uniform_angle) ** 2
+        
+    return ssd
+
+    
+    
 def jac_combined(p_angles, vertex_obj, uniform_angle):
     return ([1/len(p_angles) + 1] * len(p_angles))
 
@@ -485,25 +494,106 @@ def combined_obj(p_angles, vertex_obj, uniform_angle):
 def sector_angle_constraint(vertex_obj):
     pass
 
-def slsq(vertex_obj, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15):
+def norm_compute_transformations(vertex_index, vertices, main_vertex_indices, angles, start_edge):
+    """
+    Sequential folding is almost.
+    But the start edge has the wrong dihedral angle due to interference from folding the last edge.
+    Due to this, 
+    even when we have a valid fold configuration from gradient_descent or lbfgs,
+    we can not visualise the fold configuration, we can instead only simulate one which is close except for two angles
+    """
+    vertex_obj = vertices[vertex_index]
+    surrounding_faces = vertex_obj.surrounding_faces
+    n = len(surrounding_faces)
+    
+    
+    
+    print('angles', angles)
+    print('vertex_inds', vertex_index)
+    print('vertex_inds', vertex_index)
+
+    print('main_vertex_indices',main_vertex_indices)
+    
+    angle = angles[main_vertex_indices:main_vertex_indices+n]
+    print('angle', angle)
+    print('vertex_obj.surrounding_edges', n)
+    print(angle)
+    transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
+    #transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
+    # print('!!!INTENDED fold angles', angle)
+    transforms[start_edge] = np.eye(3) 
+    right_edge_obj = vertex_obj.surrounding_edges[start_edge]
+    fold_angle = angle[start_edge] if isinstance(angle,(list, tuple, np.ndarray)) else angle
+    ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
+    prod = rodrigues_rotation_matrix(right_edge_obj, ang)
+    for i_count in range(1,n):
+        i = (start_edge + i_count) % (n)
+        right_edge_obj = vertex_obj.surrounding_edges[i]
+
+        fold_angle = angle[i] if isinstance(angle,(list, tuple, np.ndarray)) else angle
+        ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
+
+        R = rodrigues_rotation_matrix(right_edge_obj, ang)
+        
+        
+        prod = prod @ R
+    # print(prod)
+    # print('norm', np.linalg.matrix_norm(np.eye(3) - prod))
+    return [prod, np.linalg.matrix_norm(np.eye(3) - prod)]
+
+
+
+def constraints_on_other_angles(vertex_index, vertex_objs):
+    adds = 0
+    
+    for vertex_obj in vertex_objs:
+        for edge_obj in vertex_obj.surrounding_edges:
+            edge_obj.curve_angle 
+    
+
+def slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict,uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15, obj_fn=ssd_objective_angles, hasJac=False):
+    vertex_obj = vertices[vertex_index]
     num_edges = len(vertex_obj.surrounding_edges)
+    print('numb', num_edges)
+  
+        
+        
+    if len(vertices) > 1:
+        pass
+    
     constraints = [{
     'type': 'eq',
-    'fun': lambda h: loop_closure_constraint(h, vertex_obj)
+    'fun': lambda h: norm_compute_transformations(vertex_index, vertices, main_vertex_indices, h, 0)[1]
     }]
     
-    ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
-    bend_around_vertex(vertex_obj, [uniform_angle]*num_edges)
-    start_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
     
+    
+    ##Constraints:
+    ####-> keep angles of other vertices as fixed as possible but valid around the vertices also. 
+    
+    
+    
+    ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
+   # bend_around_vertex(vertex_obj, [uniform_angle]*num_edges)
+    print('prestart', uniform_angle)
+
+    start_angles = [uniform_angle] * num_edges#[ang.item() for ang in get_new_angles(vertex_obj)]
+    new_start_angles = []
+    
+    for (i, vertex) in enumerate(vertices):
+        if not (vertex.isBoundary): 
+            for edge in vertex.surrounding_edges: 
+                new_start_angles.append(uniform_angle if i == vertex_index else edge.curve_angle)
+        
+    print('start', new_start_angles)
     new_angles = minimize(
-        objective_uniformity_mean,  # your objective function
-        start_angles,
-        (uniform_angle),
+        obj_fn,  # your objective function
+        new_start_angles,
+        (uniform_angle, num_edges, main_vertex_indices),
         method='SLSQP',
-        jac=jac_mean,
+        jac= jac_mean if hasJac else None,
         constraints=constraints,
-        bounds=[(np.deg2rad(0), np.deg2rad(180))] * num_edges,
+        bounds=[(np.deg2rad(0), np.deg2rad(180))] * len(new_start_angles),
         options={
                     'maxiter': maxiter,
                     'disp': True,
@@ -512,22 +602,85 @@ def slsq(vertex_obj, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15):
                 }
         )
     
-    print(new_angles)
+    # print(new_angles)
+    ##seems to solve for angles properly ... intended angles are good.
+    ##what is visually folded differs drastically
+    
+    print('mews', new_angles.x)
+    return new_angles.x
+
+def constraint_single_edge(angles,  main_vertex_indices, pre_fold_angles, index, angle):
+    """We want to minimise deviations of untouched angles, but get rotated angle to specified new angle
+    """
+    ssd = 0
+    # print('wuttt angles', len(angles))
+    
+    for i in range(len(angles)):
+        if i != main_vertex_indices + index:
+            ssd += (angles[i] - pre_fold_angles[i]) ** 2
+            
+    return ssd
+
+def objective_fold_to_edge_angle(angles, main_vertex_indices, index, angle):
+    return (angles[main_vertex_indices+index] - angle)**2
+            
+    
+
+def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1e-14, eps=1e-15):
+    
+    edge_start_dict = {}
+    current_angles = []
+
+    pos = 0
+    for (i, vert) in enumerate(vertices):        
+        if not vert.isBoundary:
+            edge_start_dict[i] = pos
+            pos += len(vert.surrounding_edges)
+            current_angles += [ang.item() for ang in get_new_angles(vert)]  
+
+        
+    
+            
+    # current_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
+    
+    constraints = [{
+    'type': 'eq',
+    'fun': lambda h: norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], h, 0)[1]
+    }, {
+    'type': 'eq',
+    'fun': lambda h: constraint_single_edge(h,  edge_start_dict[vertex_index], current_angles, index, angle)
+    }]
+    
+    ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
+    current_angles[edge_start_dict[vertex_index]+index] = float(angle)
+    bend_around_vertex(vertices, vertex_index, edge_start_dict, current_angles)
+    #start_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
+    start_angles = []
+    for vert in vertices:
+        if not (vert.isBoundary):
+            start_angles += [ang.item() for ang in get_new_angles(vert)]  
+                
+    new_angles = minimize(
+        objective_fold_to_edge_angle,  # your objective function
+        start_angles,
+        (edge_start_dict[vertex_index], index, angle),
+        method='SLSQP',
+        # jac=jac_mean,
+        constraints=constraints,
+        bounds=[(np.deg2rad(0), np.deg2rad(180))] * len(start_angles),
+        options={
+                    'maxiter': maxiter,
+                    'disp': True,
+                    'ftol': ftol,
+                    'eps': eps
+                }
+        )
+    
+    print(new_angles) #vertex_index, vertices, main_vertex_indices, h, 0
+    print('norm diff', norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index],new_angles.x, 0)[1])
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
     return new_angles.x
-    #bend_around_vertex(vertex_obj, new_angles.x)
-    
-    #vertex_slsq(vertex_obj, new_angles.x)
-    
-    print('Intended Fold Angles @ src', new_angles.x)
-    print(new_angles.x)
-    print('!!!COMPUTED fold angles', [ang.item() for ang in get_new_angles(vertex_obj)])
-    
-    # print('mean', objective_uniformity_mean(new_angles.x, uniform_angle))
-    # print('count', objective_uniformity(new_angles.x, uniform_angle))
-    # print('loop', loop_closure_constraint(new_angles.x, vertex_obj))
-    # print('rotatable', angles_rotatable(new_angles.x, vertex_obj))
-    
+
     

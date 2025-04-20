@@ -9,6 +9,7 @@ const Results = () => {
     const makeMatrix = () => {
         console.log('fds', foldResults?.angle_approx_loop_closure_matrix)
         const matrix = foldResults?.angle_approx_loop_closure_matrix ?? null
+        console.log('ma', matrix)
         if (matrix != null) {
             return(
                 <small><table>
@@ -44,35 +45,17 @@ const Results = () => {
 
     return(
         <div>
-        <div style={{backgroundColor: '#5868a8', color:'#fbfbfa', padding:'1rem 1rem', width:'14rem', height:'fit-content'}}>
-            ∥R-I∥R<sub>F</sub> = <input name="loop_closure" type="number" value={foldResults?.angle_approx_loop_closure ?? null} required style={{width: '9rem'}}/><br></br><br></br>
+        <div style={{backgroundColor: '#5868a850', color:'#000000', padding:'1rem 1rem', width:'14rem', height:'fit-content'}}>
+            ∥R-I∥R<sub>F</sub> = <input name="loop_closure" type="number" value={foldResults?.angle_approx_loop_closure ?? 0} required style={{width: '9rem'}}/><br></br><br></br>
             <div style={{flexDirection: 'row'}}> 
                 <div>R = X <sub>1</sub>⋅ ... ⋅X<sub>n</sub> =</div>
                 <div>{makeMatrix()}</div>
             </div><br></br>
-            <small>Fold Deviation from Angles</small> <input name="fold_diff" type="list" value={foldResults?.dist_from_angle_results ?? null} required style={{width: '10rem'}}/><br></br><br></br>
-            <small>Total Edge Changes</small> <input name="edge_diff" type="number" value={foldResults?.total_edge_deviation ?? null} required style={{width: '10rem'}}/><br></br><br></br>
-            <small>Total Sector Angle Changes</small> <input name="sec_diff" type="number" value={foldResults?.total_sector_angle_deviation ?? null} required style={{width: '10rem'}}/>
+            <small>Mean of Angles</small> <input name="fold_diff" type="number" value={foldResults?.dist_from_angle_results ?? 0} required style={{width: '10rem'}}/><br></br><br></br>
+            <small>Total Edge Changes</small> <input name="edge_diff" type="number" value={foldResults?.total_edge_deviation ?? 0} required style={{width: '10rem'}}/><br></br><br></br>
+            <small>Total Sector Angle Changes</small> <input name="sec_diff" type="number" value={foldResults?.total_sector_angle_deviation ?? 0} required style={{width: '10rem'}}/>
 
-            {/* <label onChange={(e) => updateFoldOptions(e)}>
-                {"Patterns:    "}
-                    <select name="patternOptions" type="text"  defaultValue="WBB" required style={{width: '10rem', backgroundColor:'#fbfbfa'}}> 
-                        <option value="WBB">Waterbomb Base </option>
-                        <option value="BF">Book Fold</option>
-                        <option value="MOF_Single">Miura Ori Fold - Single Vertex</option>
-                    </select>
-            </label>
-        </div>
-        <br></br>
-        <div style={{backgroundColor: '#5868a8', color:'#fbfbfa', padding:'1rem 1rem', width:'14rem', height:'fit-content'}}>
-            <label onChange={(e) => updateFoldOptions(e)}>
-                {"Origami Model:    "}
-                    <select name="modelOptions" type="text"  defaultValue="CBH" required style={{width: '14rem', backgroundColor:'#fbfbfa'}}> 
-                        <option value="CBH">Custom Bar-Hinge Model</option>
-                        <option value="TSBH">Torsional Spring Bar-Hinge Model</option>
-                        <option value="TSS">Truss Model</option>
-                    </select>
-            </label> */}
+
         </div>
     </div>
 

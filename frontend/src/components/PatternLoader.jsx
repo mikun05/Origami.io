@@ -225,11 +225,14 @@ const PatternLoader = () => {
                             </Canvas>
                         </div>
 
-                        <ApproxOptions />
+                        <div style={{flexDirection: 'column', gap:'2rem'}}>
+                            <ApproxOptions />
+                            <br></br> <br></br>
+                            <Results />
+                        </div>
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
                             <Options setUp={setUp} changeSetUp={changeSetUp} />
                             <br></br><br></br>
-                            <Results />
                         </div>
                         
 
@@ -237,10 +240,7 @@ const PatternLoader = () => {
                     </div>
 
                     <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'80rem', gap: '1rem', margin:'auto' }}> 
-                            <div>Loop Closure</div>
-                            <div>Sector Angles Deviations</div>
-                            <div>Dihedral Angle Deviation</div>
-                            <div>Edge Length Deviation</div>
+                            {'AAAHHHH!!!'}
                     </div>
                 </div>
             ) : (

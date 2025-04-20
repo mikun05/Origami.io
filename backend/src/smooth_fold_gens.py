@@ -128,8 +128,9 @@ class SmoothFoldGeometry(CreasePattern):
         normalized_2 = n2 / np.linalg.norm(n2)
         
         dot_product = np.dot(normalized_1, normalized_2)
+        print('problem here?', dot_product)
         
-        angle = np.arccos(dot_product)
+        angle = np.arccos(np.clip(dot_product, -1, 1))
         
         #fold_angle = scale * angle ##scale * (np.pi - angle) -> result from book assuming normla in flat crease pattern is [0,0,-1] but I have now made it so that it is [0, 0, 1] 
         fold_angle = np.pi-angle
@@ -305,6 +306,7 @@ class SmoothFoldPatternVertex:
         self.vertex = vertex
         self.surrounding_edges = self.order_edges_counterclockwise(vertex, index) ##returns edges numbered m1, to mk, in counterclockwise order
         self.complete_edges_setup()
+        self.isBoundary = self.check_boundary()
         
         self.surrounding_faces = self.get_faces_surrounding_vertex() ##self.surrounding_faces[(i,j)] gives face_ij between edges m_i and m_j
         self.surrounding_angles = self.get_angles_surrounding_vertex() ##self.surrounding_angles[(i,j)] gives angle_ij between edges m_i and m_j
@@ -316,8 +318,15 @@ class SmoothFoldPatternVertex:
             "vertex": self.vertex,
             "flat_vertex": self.original_vertex,
             "surrounding_edges": [edge_obj.to_dict() for edge_obj in self.surrounding_edges],
-            "surrounding_angles": [float(angle) for angle in self.surrounding_angles]
+            "surrounding_angles": [float(angle) for angle in self.surrounding_angles],
+            "boundary": self.isBoundary
         }
+        
+    def check_boundary(self):
+        for (i, edge) in enumerate(self.parent_crease.edges):
+            if self.index in edge and self.parent_crease.edges_assignments[i] == 'B':
+                return True
+        return False
         
     def order_edges_counterclockwise(self, vertex, index):
         """
@@ -572,6 +581,7 @@ class SmoothFoldPatternEdge:
         self.edge_coords = edge_coords
         self.original_edge_coords = edge_coords
         self.edge_pointer = edge_pointer #identifies the edge position in the edges_vertices set in the crease pattern
+        self.end_vertex_position = [x for x in edge_pointer if x != j][0]
 
         self.direction_vector = self.calculate_direction_vector()
         
@@ -667,9 +677,7 @@ class SmoothFoldPatternEdge:
         self.edge_coords = edge_coords
         self.original_source_vertex = self.parent_vertex.parent_crease.flat_vertices[self.id[0]]
         self.source_vertex = self.parent_vertex.parent_crease.new_vertices[self.id[0]]
-        
-        
-                
+             
         if np.allclose(self.edge_coords[0], self.source_vertex):
             self.edge_vector = np.array(self.edge_coords[1]) - np.array(self.source_vertex)
         else:

@@ -2,13 +2,40 @@ from angle_optimisation import *
 angleApprox = {}
 vertexApprox = {}
 
-def approx_process(angleApprox_info, vertexApprox_info, vertex_obj, uniform_angle):
+def approx_process(angleApprox_info, vertexApprox_info, vertex_index, vertices, uniform_angle):
     angleApprox = angleApprox_info
     vertexApprox = vertexApprox_info
     results = {}
+    vertex_obj = vertices[vertex_index]
+    
+    edge_start_dict = {}
+    pos = 0
+    for (i, vert) in enumerate(vertices):        
+        if not vert.isBoundary:
+            edge_start_dict[i] = pos
+            pos += len(vert.surrounding_edges)
+            
+            
+            
+    print('XXXXXXXXXXXXXedge start dict', edge_start_dict)
+        
+    main_vertex_indices = 0
+    for i in range(vertex_index):
+        vertex_obj = vertices[i]
+        if not vertex_obj.isBoundary:
+            main_vertex_indices += edge_start_dict[i]
+    
+    # i = 0
+    # while i != vertex_index:
+    #     if not vertices[i].isBoundary:
+    #         main_vertex_indices += len(vertices[i].surrounding_edges)
+    #     i += 1
+        
     
     print('ANGLE APPROXIMATION WITH', angleApprox['angleApproxMeth'])
     match angleApprox['angleApproxMeth']:
+        case 'NA':
+            new_angles = [uniform_angle] * len(vertex_obj.surrounding_edges)
         case 'GD':
             new_angles = gradient_descent(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'])
         case 'LBFGS':
@@ -18,31 +45,39 @@ def approx_process(angleApprox_info, vertexApprox_info, vertex_obj, uniform_angl
         case 'Neg_Anneal_LBFGS':
             new_angles = annealing_optimiser_dec(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
         case 'SQP':
-            new_angles = slsq(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
+            new_angles = slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
     print('COMPLETED ANGLE APPROXIMATION WITH', angleApprox['angleApproxMeth'])
-    results['angle_approx_loop_closure'] = f"{float(tachi_constraints_vertex_level_inputted(vertex_obj, new_angles)[1]):.{8}g}"
-    results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in tachi_constraints_vertex_level_inputted(vertex_obj, new_angles)[0].tolist()]
-    # results['angle_approx_new_angles'] = new_angles.tolist()
+    print('new_angles', new_angles)
 
-    if vertexApprox['vertexPointMeth'] == 'Rot':
-        print('BEGIN FACE ROTATION')
-        vertex_points = bend_around_vertex(vertex_obj, np.array(new_angles, dtype=np.float64))
-        print('COMPLETED FACE ROTATION')
+    #if vertexApprox['vertexPointMeth'] == 'Rot':
+    print('BEGIN FACE ROTATION')
+    vertex_points = bend_around_vertex(vertices, vertex_index, edge_start_dict, np.array(new_angles, dtype=np.float64), final=True)
+    print('COMPLETED FACE ROTATION')
 
-    elif vertexApprox['vertexPointMeth'] == 'SQP':
-        print('VERTEX POIN APPROXIMATION WITH SQP FACE ROTATION')
-        vertex_points = vertex_slsq(vertex_obj, np.array(new_angles, dtype=np.float64), maxiter=vertexApprox['vertexMaxIt'], ftol=vertexApprox['vertexFTol'], eps=vertexApprox['vertexEps'])
-        print('COMPLETED VERTEX POIN APPROXIMATION WITH SQP FACE ROTATION')
+    # elif vertexApprox['vertexPointMeth'] == 'SQP':
+    #     print('VERTEX POIN APPROXIMATION WITH SQP FACE ROTATION')
+    #     vertex_points = vertex_slsq(vertex_obj, np.array(new_angles, dtype=np.float64), maxiter=vertexApprox['vertexMaxIt'], ftol=vertexApprox['vertexFTol'], eps=vertexApprox['vertexEps'])
+    #     print('COMPLETED VERTEX POIN APPROXIMATION WITH SQP FACE ROTATION')
 
     print(vertex_points)
-    new_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
+    new_angles = []
+    for vert in vertices:
+        if not (vert.isBoundary):
+            new_angles += [ang.item() for ang in get_new_angles(vert)]
+            
+    print('nrew', new_angles)
+            
+    results['angle_approx_loop_closure'] = f"{float(norm_compute_transformations(vertex_index, vertices, main_vertex_indices, new_angles, 0)[1]):.{8}g}"
+    results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in norm_compute_transformations(vertex_index, vertices, main_vertex_indices, new_angles, 0)[0].tolist()]
+
     results['vertex_approx_new_angles'] = new_angles
-    results['dist_from_angle_results'] =     f"{float(vertex_points['check']):.{8}g}"
+    results['dist_from_angle_results'] =     f"{float(vertex_points['mean']):.{8}g}"
     results['total_edge_deviation'] =     f"{float(vertex_points['obj_length']):.{8}g}"
     results['total_sector_angle_deviation'] =     f"{float(vertex_points['sec_size']):.{8}g}"
 
     print(results)
     return results
+
 def begin_approx(foldInfo):
-    if angleApprox['angleApproxMeth'] == 'LBFGS':
+    if angleApprox['angleApproxMeth'] == 'SQP':
         pass

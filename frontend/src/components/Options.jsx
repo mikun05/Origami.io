@@ -38,6 +38,9 @@ const Options = (props) => {
                         <option value="bf">Book Fold</option>
                         <option value="mo_single">Miura Ori Fold - Single Vertex</option>
                         <option value="bel_fig_2">Belcastro Figure 2</option>
+                        <option value="mo_double">Miura Ori Fold - Two Vertices</option>
+                        <option value="three_sq">Three Squares</option>
+                        <option value="four_sq">Four Squares</option>
                     </select>
             </label>
         </div>
@@ -47,8 +50,7 @@ const Options = (props) => {
                 {"Origami Model:    "}
                     <select name="modelOptions" type="text"  defaultValue="CBH" required style={{width: '14rem', backgroundColor:'#fbfbfa'}}> 
                         <option value="CBH">Custom Bar-Hinge Model</option>
-                        <option value="TSBH">Torsional Spring Bar-Hinge Model</option>
-                        <option value="TSS">Truss Model</option>
+                        <option value="CRR">Custom Rigid Rotational</option>
                     </select>
             </label>
         </div>

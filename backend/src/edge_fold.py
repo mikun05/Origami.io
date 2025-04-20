@@ -59,7 +59,7 @@ def rodrigues_rotation_matrix(edge_obj, angle):
     
     return R
 
-def compute_transformations(vertex_obj, angle, start_edge):
+def compute_transformations(T_start, vertex_obj, vertex_zero, angle, start_edge, final=False):
     """
     Sequential folding is almost.
     But the start edge has the wrong dihedral angle due to interference from folding the last edge.
@@ -75,7 +75,14 @@ def compute_transformations(vertex_obj, angle, start_edge):
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
     #transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
     print('!!!INTENDED fold angles', angle)
-    transforms[start_edge] = np.eye(3) 
+    transforms[start_edge] = T_start if final == True else np.eye(3) 
+    right_edge_obj = vertex_obj.surrounding_edges[start_edge]
+    print('fold_angle_1', angle)
+    fold_angle = angle[start_edge] if isinstance(angle,(list, tuple, np.ndarray)) else angle
+    print('fold_angle', fold_angle)
+    ang = fold_angle + np.pi if  right_edge_obj.fold_type == "V" else np.pi - fold_angle
+    prod = rodrigues_rotation_matrix(right_edge_obj, ang)
+    
     for i_count in range(1,n):
         i = (start_edge + i_count) % (n)
         right_edge_obj = vertex_obj.surrounding_edges[i]
@@ -95,7 +102,9 @@ def compute_transformations(vertex_obj, angle, start_edge):
         #transforms[i] = T.copy()
         
         transforms[i] =  transforms[(i-1 )% n] @ R
-
+        prod = prod @ R
+    print(prod)
+    print('norm', np.linalg.matrix_norm(np.eye(3) - prod))
     return transforms
 
 def compute_transformations_Q(vertex_obj, angle, start_edge):
@@ -552,39 +561,95 @@ def check_sector_size(vertex_obj):
     return totss
       
         
-def bend_around_vertex(vertex_obj, p_angle, update=True, start_edge=0):
+def bend_around_vertex(vertices, vertex_index, edge_start_dict, p_angle, update=True, start_edge=0, final=False):
     """
     For a given edge, andle and sym, 
     Bend the edge accordingly whilst ensuring that other edges aro source vertex are validly bent
     This should work perfectly for single vertex patterns like the water bomb base, but not for those with multiple internal vertices
     Currently this version works for a singular crease, past this previous folds are tampered with when folding others around the vertex
     """
-
-    current_crease = vertex_obj.parent_crease  
+    vertex_obj = vertices[vertex_index]
     ##ACTUALLY FOLDS RODRIGUES ALMOST ACCURATELY p_angle = [np.deg2rad(116.8), np.deg2rad(98), np.deg2rad(98), np.deg2rad(116.8), np.deg2rad(98), np.deg2rad(98)]
 
-    transforms = compute_transformations(vertex_obj, p_angle, start_edge)
-    n = len(current_crease.new_vertices)
-    new_vertices = [None] * n
-    for (i, face) in enumerate(vertex_obj.surrounding_faces):
-        T = transforms.get(i)#.as_matrix()
+    # transforms = compute_transformations(vertex_obj, p_angle, start_edge)
+    # n = len(current_crease.new_vertices)
+    # new_vertices = [None] * n
+    # source = vertex_obj.vertex
+    # faces = vertex_obj.surrounding_faces
+    
+    prefered_angles_around_vertex = p_angle[edge_start_dict[vertex_index]: edge_start_dict[vertex_index] + len(vertex_obj.surrounding_edges)]
 
-        for v in face:
-            new_vertices[v] = np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()
     
-    current_crease.new_vertices = new_vertices ##issue for when we move on to multivertexed folds. .. i only want to change affeted vertices not replace th whole vertex list
+    prefered_angles = []
+    for (i, vert) in enumerate(vertices):
+        if not (vert.isBoundary):
+            if i == vertex_index:
+                prefered_angles += [ang.item() for ang in get_new_angles(vert)]  
+            else:     
+                prefered_angles += p_angle[edge_start_dict[i]: edge_start_dict[i] + len(vert.surrounding_edges) ].tolist() if isinstance(p_angle,(tuple, np.ndarray)) else p_angle[edge_start_dict[i]: edge_start_dict[i] + len(vert.surrounding_edges) ]
+
+    print('p', prefered_angles_around_vertex)
+
     
+    T_start = np.eye(3) ##this why only face 0 of the 0th vertex is fixed in the xy-plane
+    vertex_zero = [vert for vert in vertices if not vert.isBoundary][0]
+    
+    for (i, vert) in enumerate(vertices):
+        current_crease = vert.parent_crease  
+        temp_vertex_point_dict = {}
+
+        if not vert.isBoundary:
+           
+            start = edge_start_dict[i]
+            end =  start + len(vert.surrounding_edges) 
+            relevant_angles = p_angle[start:end]
+            print('rel', i, relevant_angles)
+            transforms = compute_transformations(T_start, vert, vertex_zero, relevant_angles, start_edge, final)
+            source = vert.vertex
+            faces = vert.surrounding_faces
+            
+            for (i, face) in enumerate(faces):
+                
+                T = transforms.get(i)#.as_matrix()
+                adjacent_faces = face + get_adjacent_faces(face, current_crease.edges, current_crease.faces, current_crease.edges_assignments)
+                print(adjacent_faces, adjacent_faces)
+                for v in face:
+                    ##should we instead be rotating the edge vector and then adding it to our source to replace v??
+                    
+                    ##Could instead solve for rotations about all other vertices whilst keeping the already rotated angles fixed (subject to the new vertices)
+                    rotated_edge_vector = np.dot(T, np.array(current_crease.flat_vertices[v] - np.array(source)))
+                    temp_vertex_point_dict[v] = (rotated_edge_vector + source).tolist()
+                    #current_crease.new_vertices[v] = (rotated_edge_vector + source).tolist()#np.dot(T, np.array(current_crease.flat_vertices[v])).tolist()
+
+            T_start = np.eye(3)
+
+    #current_crease.new_vertices = new_vertices ##issue for when we move on to multivertexed folds. .. i only want to change affeted vertices not replace th whole vertex list
+        for v in list(temp_vertex_point_dict.keys()):
+            current_crease.new_vertices[v] = temp_vertex_point_dict[v]
+        
     if update:
-        update_edges_around_vertex(vertex_obj)
+        for vert in vertices:
+            update_edges_around_vertex(vert)
+        
     
-    new_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
-    prefered_angles = p_angle if isinstance(p_angle,(list, tuple, np.ndarray)) else [p_angle]*n
+    new_angles_around_vertex = [ang.item() for ang in get_new_angles(vertex_obj)]
+    new_angles = []
+    for (i, vert) in enumerate(vertices):
+        if not (vert.isBoundary):
+                new_angles += [ang.item() for ang in get_new_angles(vert)]  
+           
+    
+    
+    
+    print('n', new_angles_around_vertex)
+    print('alln', new_angles)
     
     return(
         {
-        'check': check_dihedral(new_angles, prefered_angles, vertex_obj),
+        'check': check_dihedral(new_angles_around_vertex, prefered_angles_around_vertex, vertex_obj),
         'obj_length': check_edge_lengths(vertex_obj),
-        'sec_size': check_sector_size(vertex_obj)
+        'sec_size': check_sector_size(vertex_obj),
+        'mean': np.rad2deg(np.sum(new_angles_around_vertex) / len(new_angles_around_vertex))
         }
     )
     
