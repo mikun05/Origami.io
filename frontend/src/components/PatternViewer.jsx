@@ -122,6 +122,9 @@ const RotateObject = ({pivot, children}) => {
     const lastPointer = useRef({ x: 0, y: 0 });
     const [isRotatingZ, setIsRotatingZ] = useState(false);
     const [isRotatingX, setIsRotatingX] = useState(false);
+    const { gl } = useThree(); 
+
+    const canvas = gl.domElement;
 
 
     useEffect(() => {
@@ -176,14 +179,14 @@ const RotateObject = ({pivot, children}) => {
         }
       };
   
-      window.addEventListener("pointerdown", handlePointerDown);
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", handlePointerUp);
+      canvas.addEventListener("pointerdown", handlePointerDown);
+      canvas.addEventListener("pointermove", handlePointerMove);
+      canvas.addEventListener("pointerup", handlePointerUp);
   
       return () => {
-        window.removeEventListener("pointerdown", handlePointerDown);
-        window.removeEventListener("pointermove", handlePointerMove);
-        window.removeEventListener("pointerup", handlePointerUp);
+        canvas.removeEventListener("pointerdown", handlePointerDown);
+        canvas.removeEventListener("pointermove", handlePointerMove);
+        canvas.removeEventListener("pointerup", handlePointerUp);
       };
     }, [isRotatingX, isRotatingZ, groupRef]);
 
