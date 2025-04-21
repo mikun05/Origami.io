@@ -27,15 +27,16 @@ const FoldVertexDialogue = (props) => {
         setVertexPoint(pattern['fold_format'][0]['vertices'][focusedVertexIndex] ?? [])
     }, [pattern, focusedVertexIndex])
 
-    const handleFoldEdge = (e) => {
-        if (focusedVertexIndex === undefined || focusedVertexIndex === null) return;
-        e.preventDefault();
 
-        const form = e.target;
-        const formData = new FormData(form);
+    const handleFoldEdge = (inputAngle) => {
+        if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
+        // e.preventDefault();
+
+        // const form = e.target;
+        // const formData = new FormData(form);
         const vertexIndex = focusedVertexIndex
-        const angle = Number(formData.get('uniformFoldEdgesAroundVertexAngle'))
-        const sym = Number(formData.get('uniformFoldEdgesAroundVertexSym'))
+        const angle = Number(inputAngle)
+        const sym = 0
 
         const angleApproxMeth = foldOptions.angleApproxMeth
         const angleMaxIt = Number(foldOptions.angleMaxIt)
@@ -55,10 +56,15 @@ const FoldVertexDialogue = (props) => {
             .catch(error => console.error("Error folding around vertex:", error));
     };
 
+    // useEffect(() => {
+    //     handleFoldEdge(uniformAngle)
+    // }, [uniformAngle])
+
+
 
 
     return(
-        <form method="post" onSubmit={handleFoldEdge}>
+        <div>
             <label>
            
             <div style={{display: 'flex', flexDirection: 'row', gap: '1rem'}}>
@@ -68,13 +74,13 @@ const FoldVertexDialogue = (props) => {
             <div><strong>{Math.round(vertexPoint[2] * 100) / 100}{")"}</strong></div>
             </div>
             Uniform(ish) Fold by: <br></br>
-            <input onChange={(e) => setUniformAngle(e.target.value)}name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={uniformAngle} min="0" max="180" required style={{width: '1.5rem'}}/>°
+            <input onChange={(e) => {setUniformAngle(e.target.value)}} name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={uniformAngle} value={uniformAngle} min="0" max="180" required style={{width: '1.5rem'}}/>°
             </label>
             <br></br><br></br>
             <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
-                <button type="submit" style={{height: '2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
+                <button onClick={() => handleFoldEdge(uniformAngle)} style={{height: '2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
             </div>
-        </form>
+        </div>
     )
 }
 
@@ -133,6 +139,7 @@ const FoldEdgeDialogue = (props) => {
         const edgeIndex = focusedEdgeIndex
         const angle = Number(formData.get('foldEdge'))
         const sym = Number(formData.get('foldSym'))
+        const slider = false
 
         const angleApproxMeth = foldOptions.angleApproxMeth
         const angleMaxIt = Number(foldOptions.angleMaxIt)
@@ -143,7 +150,7 @@ const FoldEdgeDialogue = (props) => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps})
+        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
             .then(response => {
                 setFoldPattern(response.data.pattern); 
                 setFoldResults(response.data.approx_results);  
@@ -171,7 +178,7 @@ const FoldEdgeDialogue = (props) => {
 }
 
 const PatternLoader = () => {
-    const { foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle} = useContext(PatternContext);
+    const { foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
     const [setUp, changeSetUp] = useState(false)
 
     useEffect(() => {
@@ -187,14 +194,14 @@ const PatternLoader = () => {
             .catch(error => console.error("Error fetching pattern data:", error));
     };
 
-    const handleFoldEdge = (vertexIndex, edgeIndex, angle, sym) => {
-        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym })
-            .then(response => {
-                changeSetUp(false)
-                setFoldPattern(response.data);  // Update with new fold state
-            })
-            .catch(error => console.error("Error folding edge:", error));
-    };
+    // const handleFoldEdge = (vertexIndex, edgeIndex, angle, sym) => {
+    //     axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym })
+    //         .then(response => {
+    //             changeSetUp(false)
+    //             setFoldPattern(response.data);  // Update with new fold state
+    //         })
+    //         .catch(error => console.error("Error folding edge:", error));
+    // };
 
     const resetPattern = () => {
         setUniformAngle(180)
@@ -204,7 +211,42 @@ const PatternLoader = () => {
             setFoldPattern(response.data);  // Reset to pre-fold configuraton
         })
         .catch(error => console.error("Error resetting pattern:", error));
+
+
     }
+
+    const handleFoldEdge = (inputAngle, slide) => {
+        if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
+        // e.preventDefault();
+
+        // const form = e.target;
+        // const formData = new FormData(form);
+        const slider = slide
+        const vertexIndex = focusedVertexIndex
+        const angle = Number(inputAngle)
+        const sym = 0
+
+        const angleApproxMeth = foldOptions.angleApproxMeth
+        const angleMaxIt = Number(foldOptions.angleMaxIt)
+        const angleFTol = Math.pow(10, -Number(foldOptions.angleFTol))
+        const angleEps = Math.pow(10, -Number(foldOptions.angleEps));
+        const vertexPointMeth = foldOptions.vertexPointMeth
+        const vertexMaxIt = Number(foldOptions.vertexMaxIt)
+        const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
+        const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
+        
+        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
+            .then(response => {
+                changeSetUp(false)
+                setFoldPattern(response.data.pattern); 
+                setFoldResults(response.data.approx_results);  
+            })
+            .catch(error => console.error("Error folding around vertex:", error));
+    };
+
+    // useEffect(() => {
+    //     handleFoldEdge(uniformAngle)
+    // }, [uniformAngle])
 
 
     return (
@@ -251,6 +293,12 @@ const PatternLoader = () => {
 
                     <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'80rem', gap: '1rem', margin:'auto' }}> 
                             {'AAAHHHH!!!'}
+                            {/* onInput changes for every slide change regardless of whether the slider has stopped, onChange on triggers once slider stops and mouse press is false */}
+                            <input 
+                                type="range" 
+                                onInput={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, true)}}  
+                                onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
                     </div>
                 </div>
             ) : (

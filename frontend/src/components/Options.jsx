@@ -41,6 +41,7 @@ const Options = (props) => {
                         <option value="mo_double">Miura Ori Fold - Two Vertices</option>
                         <option value="three_sq">Three Squares</option>
                         <option value="four_sq">Four Squares</option>
+                        <option value="ico_star">Icosahedron</option>
                     </select>
             </label>
         </div>

@@ -31,7 +31,7 @@ return(
                                     </select>
                                 <br></br><br></br>
                                 {"Max Iterations:   "}
-                                    <input name="angleMaxIt" type="number" defaultValue="200000"required style={{width: '5rem'}}/>
+                                    <input name="angleMaxIt" type="number" defaultValue="200"required style={{width: '5rem'}}/>
                                 <br></br><br></br>
 
                                 ftol (1e-n): <input name="angleFTol" type="number" defaultValue="10" max="15" min="0" required style={{width: '2rem'}}/>  <small>min: 1e-15</small><br></br>

@@ -79,6 +79,15 @@ input {
   color: #000000
 }
 
+input[type=range]{ 
+  -webkit-appearance: none; 
+  width:45rem;
+  border-radius: 2rem;
+  height:0.5rem;
+  background: #5868a8;
+  color:#FFFFFF
+}
+
 select {
   background-color: #00000020;
   border: #000000;

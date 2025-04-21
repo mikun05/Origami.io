@@ -135,6 +135,44 @@ twist ={
 }
 
 #Single Vertexed
+
+# Generate 11 outer vertices on a circle of radius 10
+radius = 10
+n = 16
+angle_step = 2 * np.pi / n
+
+ico_star = {
+    "vertices_coords": [[0, 0, 0]],  # center vertex (0)
+    "edges_vertices": [],
+    "faces_vertices": [],
+    "edges_assignment": []
+}
+
+# Add outer vertices (1 to 11)
+for i in range(n):
+    angle = i * angle_step
+    x = round(radius * np.cos(angle), 5)
+    y = round(radius * np.sin(angle), 5)
+    ico_star["vertices_coords"].append([x, y, 0])
+
+# Add radial creases (center to outer vertices)
+for i in range(1, n + 1):
+    ico_star["edges_vertices"].append([0, i])
+    assignment = "M" if i % 2 == 1 else "V"
+    ico_star["edges_assignment"].append(assignment)
+
+# Add outer ring edges and boundary assignments
+for i in range(1, n + 1):
+    next_i = i + 1 if i < n else 1
+    ico_star["edges_vertices"].append([i, next_i])
+    ico_star["edges_assignment"].append("B")
+
+# Add triangular faces (center, vertex i, vertex i+1)
+for i in range(1, n + 1):
+    next_i = i + 1 if i < n else 1
+    ico_star["faces_vertices"].append([0, i, next_i])
+
+
 wbb = { #waterbomb base
             "vertices_coords": [
                 [-10, 10, 0], [10, 10, 0], [10, 0, 0], [10, -10, 0], [-10, -10, 0], [-10, 0, 0], [0, 0, 0]
@@ -236,7 +274,8 @@ all_patterns = {
     'bel_fig_2': belcastro_fig_2,
     'mo_double': two_miura_ori_fold,
     'three_sq': three_square_fold_data,
-    'four_sq': four_square_fold_data
+    'four_sq': four_square_fold_data,
+    'ico_star': ico_star
 }
 
 
@@ -326,7 +365,7 @@ def fold_edge():
     angleApprox_info = {
         'angleApproxMeth': data.get("angleApproxMeth", "SQP"),
         'angleMaxIt': data.get("angleMaxIt", 200),
-        'angleFTol': data.get("angleFTol", 1e-15),
+        'angleFTol': data.get("angleFTol", 1e-10),
         'angleEps': data.get("angleEps", 1e-14),
     }
    
@@ -367,12 +406,15 @@ def fold_edges_around_vertex():
     vertex_index = data.get("vertexIndex")
     angle = data.get("angle")
     sym = data.get("sym")
+    slider = data.get("slider")
     
-    print('app',data.get("angleApproxMeth"), "SQP" )
+    print('slkide', slider)
+    
+    #print('app',data.get("angleApproxMeth"), "SQP" )
     angleApprox_info = {
         'angleApproxMeth': data.get("angleApproxMeth", "SQP"),
-        'angleMaxIt': data.get("angleMaxIt", 200000),
-        'angleFTol': data.get("angleFTol", 1e-15),
+        'angleMaxIt': data.get("angleMaxIt", 200) if not slider else 1,
+        'angleFTol': data.get("angleFTol", 1e-10),
         'angleEps': data.get("angleEps", 1e-14),
     }
    

@@ -548,7 +548,7 @@ def constraints_on_other_angles(vertex_index, vertex_objs):
             edge_obj.curve_angle 
     
 
-def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15, obj_fn=ssd_objective_angles, hasJac=False):
+def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=200, ftol=1e-10, eps=1e-15, obj_fn=ssd_objective_angles, hasJac=False):
     vertex_obj = vertices[vertex_index]
     num_edges = len(vertex_obj.surrounding_edges)
     print('numb', num_edges)

@@ -12,7 +12,7 @@ function App() {
   const [foldPattern, setFoldPattern] = useState(null);
   const [foldOptions, setFoldOptions] = useState({
     angleApproxMeth: 'SQP',
-    angleMaxIt:200000,
+    angleMaxIt:200,
     angleFTol:10,
     angleEps:14,
     vertexPointMeth: 'Rot',
