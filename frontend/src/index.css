@@ -80,7 +80,6 @@ input {
 }
 
 input[type=range]{ 
-  -webkit-appearance: none; 
   width:45rem;
   border-radius: 2rem;
   height:0.5rem;

@@ -285,6 +285,8 @@ const PatternLoader = () => {
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
                             <Options setUp={setUp} changeSetUp={changeSetUp} />
                             <br></br><br></br>
+
+
                         </div>
                         
 
@@ -297,7 +299,8 @@ const PatternLoader = () => {
                             <input 
                                 type="range" 
                                 onInput={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, true)}}  
-                                onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                // onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                onMouseUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
                                 name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
                     </div>
                 </div>
