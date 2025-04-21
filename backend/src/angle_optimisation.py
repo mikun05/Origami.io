@@ -67,7 +67,6 @@ def tachi_constraints_vertex_level_inputted(vertex_obj, p_angles):
     # print('tac', closeness_val)
     return [prod, closeness_val] #this return a number indicating the closeness of both matrices
 
-
 def obj_function(angles, vertex_obj, uniform_angle, opt, loop_weight, uniform_weight):
         """
         Objective function checking loop closure constraint, closeness to uniform angle, and relative closeness between angles
@@ -107,7 +106,6 @@ def obj_function(angles, vertex_obj, uniform_angle, opt, loop_weight, uniform_we
         
         return (loop_weight * torch.sqrt(loop_closure_check)) #+ (uniform_weight*torch.sqrt(count))
       
-
 def get_new_angles(vertex_obj):
     new_angles = []
     
@@ -444,9 +442,9 @@ def objective_uniformity_mean(angles, uniform_angle):
         count += angle
     return np.sqrt((count / len(angles) - uniform_angle) ** 2)
 
-def ssd_objective_angles(angles, uniform_angle, n, main_vertex_indices):
+def ssd_objective_angles(angles, uniform_angle, n, main_vertex_start_index):
     ssd = 0
-    for angle in angles[main_vertex_indices: main_vertex_indices+n]:
+    for angle in angles[main_vertex_start_index: main_vertex_start_index+n]:
         ssd += (angle - uniform_angle) ** 2
         
     return ssd
@@ -494,7 +492,7 @@ def combined_obj(p_angles, vertex_obj, uniform_angle):
 def sector_angle_constraint(vertex_obj):
     pass
 
-def norm_compute_transformations(vertex_index, vertices, main_vertex_indices, angles, start_edge):
+def norm_compute_transformations(vertex_index, vertices, edge_start_index, angles, start_edge):
     """
     Sequential folding is almost.
     But the start edge has the wrong dihedral angle due to interference from folding the last edge.
@@ -512,9 +510,8 @@ def norm_compute_transformations(vertex_index, vertices, main_vertex_indices, an
     print('vertex_inds', vertex_index)
     print('vertex_inds', vertex_index)
 
-    print('main_vertex_indices',main_vertex_indices)
     
-    angle = angles[main_vertex_indices:main_vertex_indices+n]
+    angle = angles[edge_start_index: edge_start_index+n]
     print('angle', angle)
     print('vertex_obj.surrounding_edges', n)
     print(angle)
@@ -551,7 +548,7 @@ def constraints_on_other_angles(vertex_index, vertex_objs):
             edge_obj.curve_angle 
     
 
-def slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict,uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15, obj_fn=ssd_objective_angles, hasJac=False):
+def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=200000, ftol=1e-14, eps=1e-15, obj_fn=ssd_objective_angles, hasJac=False):
     vertex_obj = vertices[vertex_index]
     num_edges = len(vertex_obj.surrounding_edges)
     print('numb', num_edges)
@@ -563,7 +560,7 @@ def slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict,uniform_an
     
     constraints = [{
     'type': 'eq',
-    'fun': lambda h: norm_compute_transformations(vertex_index, vertices, main_vertex_indices, h, 0)[1]
+    'fun': lambda h: norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], h, 0)[1]
     }]
     
     
@@ -589,7 +586,7 @@ def slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict,uniform_an
     new_angles = minimize(
         obj_fn,  # your objective function
         new_start_angles,
-        (uniform_angle, num_edges, main_vertex_indices),
+        (uniform_angle, num_edges, edge_start_dict[vertex_index]),
         method='SLSQP',
         jac= jac_mean if hasJac else None,
         constraints=constraints,
@@ -609,20 +606,20 @@ def slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict,uniform_an
     print('mews', new_angles.x)
     return new_angles.x
 
-def constraint_single_edge(angles,  main_vertex_indices, pre_fold_angles, index, angle):
+def constraint_single_edge(angles,  main_vertex_start_index, pre_fold_angles, index, angle):
     """We want to minimise deviations of untouched angles, but get rotated angle to specified new angle
     """
     ssd = 0
     # print('wuttt angles', len(angles))
     
     for i in range(len(angles)):
-        if i != main_vertex_indices + index:
+        if i != main_vertex_start_index + index:
             ssd += (angles[i] - pre_fold_angles[i]) ** 2
             
     return ssd
 
-def objective_fold_to_edge_angle(angles, main_vertex_indices, index, angle):
-    return (angles[main_vertex_indices+index] - angle)**2
+def objective_fold_to_edge_angle(angles, main_vertex_start_index, index, angle):
+    return (angles[main_vertex_start_index+index] - angle)**2
             
     
 

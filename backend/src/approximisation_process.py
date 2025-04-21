@@ -19,18 +19,7 @@ def approx_process(angleApprox_info, vertexApprox_info, vertex_index, vertices, 
             
     print('XXXXXXXXXXXXXedge start dict', edge_start_dict)
         
-    main_vertex_indices = 0
-    for i in range(vertex_index):
-        vertex_obj = vertices[i]
-        if not vertex_obj.isBoundary:
-            main_vertex_indices += edge_start_dict[i]
-    
-    # i = 0
-    # while i != vertex_index:
-    #     if not vertices[i].isBoundary:
-    #         main_vertex_indices += len(vertices[i].surrounding_edges)
-    #     i += 1
-        
+
     
     print('ANGLE APPROXIMATION WITH', angleApprox['angleApproxMeth'])
     match angleApprox['angleApproxMeth']:
@@ -45,7 +34,7 @@ def approx_process(angleApprox_info, vertexApprox_info, vertex_index, vertices, 
         case 'Neg_Anneal_LBFGS':
             new_angles = annealing_optimiser_dec(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
         case 'SQP':
-            new_angles = slsq(vertex_index, vertices, main_vertex_indices, edge_start_dict, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
+            new_angles = slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
     print('COMPLETED ANGLE APPROXIMATION WITH', angleApprox['angleApproxMeth'])
     print('new_angles', new_angles)
 
@@ -67,8 +56,8 @@ def approx_process(angleApprox_info, vertexApprox_info, vertex_index, vertices, 
             
     print('nrew', new_angles)
             
-    results['angle_approx_loop_closure'] = f"{float(norm_compute_transformations(vertex_index, vertices, main_vertex_indices, new_angles, 0)[1]):.{8}g}"
-    results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in norm_compute_transformations(vertex_index, vertices, main_vertex_indices, new_angles, 0)[0].tolist()]
+    results['angle_approx_loop_closure'] = f"{float(norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[1]):.{8}g}"
+    results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[0].tolist()]
 
     results['vertex_approx_new_angles'] = new_angles
     results['dist_from_angle_results'] =     f"{float(vertex_points['mean']):.{8}g}"
