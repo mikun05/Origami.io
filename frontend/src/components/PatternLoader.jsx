@@ -79,7 +79,7 @@ const FoldVertexDialogue = (props) => {
 }
 
 const FoldEdgeDialogue = (props) => {
-    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern, setUniformAngle } = useContext(PatternContext)
+    const { focusedEdgeIndex, focusedVertexIndex, setFoldPattern, foldPattern, setUniformAngle, foldOptions, setFoldResults } = useContext(PatternContext)
     const [currentAngle, setCurrentAngle] = useState(null)
     const [sectorAngle, setSectorAngle] = useState(null)
     const [flatSectorAngle, setflatSectorAngle] = useState(null)
@@ -133,10 +133,20 @@ const FoldEdgeDialogue = (props) => {
         const edgeIndex = focusedEdgeIndex
         const angle = Number(formData.get('foldEdge'))
         const sym = Number(formData.get('foldSym'))
+
+        const angleApproxMeth = foldOptions.angleApproxMeth
+        const angleMaxIt = Number(foldOptions.angleMaxIt)
+        const angleFTol = Math.pow(10, -Number(foldOptions.angleFTol))
+        const angleEps = Math.pow(10, -Number(foldOptions.angleEps));
+        const vertexPointMeth = foldOptions.vertexPointMeth
+        const vertexMaxIt = Number(foldOptions.vertexMaxIt)
+        const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
+        const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym})
+        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps})
             .then(response => {
-                setFoldPattern(response.data);
+                setFoldPattern(response.data.pattern); 
+                setFoldResults(response.data.approx_results);  
             })
             .catch(error => console.error("Error folding edge:", error));
     };

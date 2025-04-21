@@ -236,6 +236,7 @@ def bend_around_vertex(vertices, vertex_index, edge_start_dict, p_angle, update=
     # source = vertex_obj.vertex
     # faces = vertex_obj.surrounding_faces
     
+    print('??', edge_start_dict[vertex_index], p_angle)
     prefered_angles_around_vertex = p_angle[edge_start_dict[vertex_index]: edge_start_dict[vertex_index] + len(vertex_obj.surrounding_edges)]
 
     

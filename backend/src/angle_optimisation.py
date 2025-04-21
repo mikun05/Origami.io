@@ -506,15 +506,15 @@ def norm_compute_transformations(vertex_index, vertices, edge_start_index, angle
     
     
     
-    print('angles', angles)
-    print('vertex_inds', vertex_index)
-    print('vertex_inds', vertex_index)
+    # print('angles', angles)
+    # print('vertex_inds', vertex_index)
+    # print('vertex_inds', vertex_index)
 
     
     angle = angles[edge_start_index: edge_start_index+n]
-    print('angle', angle)
-    print('vertex_obj.surrounding_edges', n)
-    print(angle)
+    # print('angle', angle)
+    # print('vertex_obj.surrounding_edges', n)
+    # print(angle)
     transforms = {} #these are transformations as applied to faces, since sym is 0.5, I need to consider the edge that affects this face as its right face, and the other that does so as its left face
     #transforms[start_edge] = np.eye(3)  #face 0 remains unrotated.
     # print('!!!INTENDED fold angles', angle)
@@ -615,16 +615,19 @@ def constraint_single_edge(angles,  main_vertex_start_index, pre_fold_angles, in
     for i in range(len(angles)):
         if i != main_vertex_start_index + index:
             ssd += (angles[i] - pre_fold_angles[i]) ** 2
+        else:
+            print('nonconstraint', i)
             
     return ssd
 
 def objective_fold_to_edge_angle(angles, main_vertex_start_index, index, angle):
+    print('fol', angles[main_vertex_start_index+index], angle)
     return (angles[main_vertex_start_index+index] - angle)**2
             
     
 
 def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1e-14, eps=1e-15):
-    
+    results = {}
     edge_start_dict = {}
     current_angles = []
 
@@ -644,19 +647,22 @@ def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1
     'type': 'eq',
     'fun': lambda h: norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], h, 0)[1]
     }, {
-    'type': 'eq',
+    'type': 'ineq',
     'fun': lambda h: constraint_single_edge(h,  edge_start_dict[vertex_index], current_angles, index, angle)
     }]
     
     ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
     current_angles[edge_start_dict[vertex_index]+index] = float(angle)
-    bend_around_vertex(vertices, vertex_index, edge_start_dict, current_angles)
+    vertex_points = bend_around_vertex(vertices, vertex_index, edge_start_dict, current_angles)
     #start_angles = [ang.item() for ang in get_new_angles(vertex_obj)]
     start_angles = []
     for vert in vertices:
         if not (vert.isBoundary):
             start_angles += [ang.item() for ang in get_new_angles(vert)]  
-                
+            
+    print('START', start_angles)
+    print(start_angles)
+    
     new_angles = minimize(
         objective_fold_to_edge_angle,  # your objective function
         start_angles,
@@ -673,11 +679,27 @@ def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1
                 }
         )
     
-    print(new_angles) #vertex_index, vertices, main_vertex_indices, h, 0
-    print('norm diff', norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index],new_angles.x, 0)[1])
+    print('ff', new_angles) #vertex_index, vertices, main_vertex_indices, h, 0
+    print('norm diff 2', norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index],new_angles.x, 0)[1])
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
-    return new_angles.x
+    vertex_points = bend_around_vertex(vertices, vertex_index, edge_start_dict, new_angles.x)
+    
+    new_angles = []
+    for vert in vertices:
+        if not (vert.isBoundary):
+            new_angles += [ang.item() for ang in get_new_angles(vert)]
+    
+    results['angle_approx_loop_closure'] = f"{float(norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[1]):.{8}g}"
+    results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[0].tolist()]
+
+    results['vertex_approx_new_angles'] = new_angles
+    results['dist_from_angle_results'] =     f"{float(vertex_points['mean']):.{8}g}"
+    results['total_edge_deviation'] =     f"{float(vertex_points['obj_length']):.{8}g}"
+    results['total_sector_angle_deviation'] =     f"{float(vertex_points['sec_size']):.{8}g}"
+
+    
+    return results
 
     

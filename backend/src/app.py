@@ -321,6 +321,23 @@ def fold_edge():
     vertex_edge_objects = pattern.vertex_objects[vertex_index].surrounding_edges
     
     edge_obj_rel_vertex = next((item for item in vertex_edge_objects if item.edge_index == edge_index), None)#gets the edge index relative to the vertex
+    
+    print('app',data.get("angleApproxMeth"), "SQP" )
+    angleApprox_info = {
+        'angleApproxMeth': data.get("angleApproxMeth", "SQP"),
+        'angleMaxIt': data.get("angleMaxIt", 200),
+        'angleFTol': data.get("angleFTol", 1e-15),
+        'angleEps': data.get("angleEps", 1e-14),
+    }
+   
+
+    vertexApprox_info = {
+        'vertexPointMeth': data.get("vertexPointMeth", "Rot"),
+        'vertexMaxIt': data.get("vertexMaxIt", 300),
+        'vertexFTol': data.get("vertexFTol", 1e-8),
+        'vertexEps': data.get("vertexEps", 1e-8),
+    }
+
 
     if edge_index is None or angle is None or vertex_index is None or sym is None:
         return jsonify({"error": "Missing parameters"}), 400
@@ -328,7 +345,7 @@ def fold_edge():
     converted_angle = np.deg2rad(angle)
     vertex_obj = pattern.vertex_objects[vertex_index]
 
-    slsq_specific_edge(pattern.vertex_objects, vertex_index, converted_angle, edge_obj_rel_vertex.id[1], maxiter=200, ftol=1e-10, eps=1e-15) #bend_edge(edge_obj_rel_vertex, converted_angle, sym)
+    results = slsq_specific_edge(pattern.vertex_objects, vertex_index, converted_angle, edge_obj_rel_vertex.id[1], maxiter=200, ftol=1e-10, eps=1e-15) #bend_edge(edge_obj_rel_vertex, converted_angle, sym)
     
     # for vertex_obj in pattern.vertex_objects:
     #     for edge_obj in vertex_obj.surrounding_edges:
@@ -336,9 +353,11 @@ def fold_edge():
     
     pattern_dict = pattern.to_dict()
     print('fold', pattern_dict['fold_format'][0]['vertices'])
-
-    return jsonify(pattern_dict)
-
+    fold_output = {
+        'pattern': pattern_dict,
+        'approx_results': results
+    }
+    return jsonify(fold_output)
 
 
 @app.route('/fold-edge-around-vertex', methods=['POST'])
