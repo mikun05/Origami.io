@@ -21,7 +21,7 @@ return(
                                 {/* <div style={{margin: 'auto', textAlign:'center'}}>FOLD MODEL</div>  */}
                                 {/* <br></br> */}
                                 {"Numerical Method "}
-                                    <select name="angleApproxMeth" type="text" defaultValue="SQP" required style={{width: '10rem'}}> 
+                                    <select name="angleApproxMeth" type="text" defaultValue="SQP" required style={{width: '12rem'}}> 
                                         <option value="NA">Use Raw Angles</option>
                                         <option value="GD">Gradient Descent</option>
                                         <option value="LBFGS">Limited-memory BFGS</option>
@@ -34,8 +34,8 @@ return(
                                     <input name="angleMaxIt" type="number" defaultValue="200"required style={{width: '5rem'}}/>
                                 <br></br><br></br>
 
-                                ftol (1e-n): <input name="angleFTol" type="number" defaultValue="10" max="15" min="0" required style={{width: '2rem'}}/>  <small>min: 1e-15</small><br></br>
-                                eps (1e-n): <input name="vertexEps" defaultValue="14" type="number" max="15" min="0" required style={{width: '2rem'}}/> <small>min: 1e-15</small>
+                                ftol (1e- <input name="angleFTol" type="number" defaultValue="10" max="15" min="0" required style={{width: '1rem'}}/>)  <small>  min: 1e-15</small><br></br>
+                                eps (1e- <input name="vertexEps" defaultValue="14" type="number" max="15" min="0" required style={{width: '1rem'}}/>)   <small>  min: 1e-15</small>
                                 <br></br>
 
                                 {/* {"Vertex Method:    "}

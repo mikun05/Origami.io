@@ -80,11 +80,12 @@ input {
 }
 
 input[type=range]{ 
-  width:45rem;
+  width:inherit;
   border-radius: 2rem;
   height:0.5rem;
   background: #5868a8;
-  color:#FFFFFF
+  color:#FFFFFF;
+  transform: rotate(180deg);
 }
 
 select {

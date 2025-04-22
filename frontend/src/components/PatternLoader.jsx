@@ -275,6 +275,13 @@ const PatternLoader = () => {
                             <Canvas >
                                 <PatternViewer pattern={foldPattern} setUp={setUp}/>
                             </Canvas>
+
+                            <input 
+                                type="range" 
+                                onInput={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, true)}}  
+                                // onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                onMouseUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
                         </div>
 
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
@@ -293,15 +300,10 @@ const PatternLoader = () => {
                         
                     </div>
 
-                    <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'80rem', gap: '1rem', margin:'auto' }}> 
+                    <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'100rem', gap: '1rem', margin:'auto' }}> 
                             {'AAAHHHH!!!'}
                             {/* onInput changes for every slide change regardless of whether the slider has stopped, onChange on triggers once slider stops and mouse press is false */}
-                            <input 
-                                type="range" 
-                                onInput={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, true)}}  
-                                // onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
-                                onMouseUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
-                                name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
+                            
                     </div>
                 </div>
             ) : (

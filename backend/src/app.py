@@ -266,6 +266,21 @@ belcastro_fig_2 = {
     ]
 }
 
+belcastro_fig_2_a = {
+    "vertices_coords": [
+        [0,0,0], [10,0,0], [10,10,0], [0,10,0], [-10,10,0], [-10,0,0], [-10,-10,0], [10,-10,0]
+    ],
+    "edges_vertices": [
+        [0,1],[0,3],[0,5],[0,6],[0,7],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,1]
+    ],
+    "faces_vertices": [
+        [0,1,2,3], [0,3,4,5], [0,5,6], [0,6,7], [0,7,1]
+    ],
+    "edges_assignment": [
+        "M", "M", "M", "V", "M", "B", "B", "B", "B", "B", "B", "B"
+    ]
+}
+
 
 all_patterns = {
     'wbb': wbb,
@@ -275,7 +290,9 @@ all_patterns = {
     'mo_double': two_miura_ori_fold,
     'three_sq': three_square_fold_data,
     'four_sq': four_square_fold_data,
-    'ico_star': ico_star
+    'ico_star': ico_star,
+    'bel_fig_2_A': belcastro_fig_2_a,
+
 }
 
 

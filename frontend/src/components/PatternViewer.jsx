@@ -480,14 +480,14 @@ const PatternViewer = (props) => {
             <RotateObject pivot={canvasCenter}>
                 <axesHelper position={[0,0,0]} scale={15} />
                 {/* <gridHelper position={canvasCenter} scale={5} rotation={new THREE.Euler( Math.PI / 2,0, 0)}/> */}
-
-                <lineSegments ref={linesRef} onClick={handleEdgePointerDown} >
+{/* 
+                <lineSegments ref={linesRef} onClick={handleEdgePointerDown} lineWidth={40} >
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[edge_vertices, 3]} />
                         <bufferAttribute attach="attributes-color" args={[edgeColors, 3]} />
                     </bufferGeometry>
-                    <lineBasicMaterial vertexColors={true} linewidth={15} />
-                </lineSegments>
+                    <lineBasicMaterial vertexColors={true} lineWidth={40} />
+                </lineSegments> */}
 
                 <points ref={pointsRef} onClick={handlePointerDown} onPointerOver={handlePointerOver} >
                     <bufferGeometry>
@@ -505,6 +505,15 @@ const PatternViewer = (props) => {
                         <bufferAttribute attach="index" args={[triangles,   1]} />
                     </bufferGeometry>
                     <meshBasicMaterial color={'#5868a8'} wireframe={false} side={THREE.FrontSide} shadowSide={THREE.FrontSide} />
+
+                    <lineSegments ref={linesRef} onClick={handleEdgePointerDown} lineWidth={40} >
+                    <bufferGeometry>
+                        <bufferAttribute attach="attributes-position" args={[edge_vertices, 3]} />
+                        <bufferAttribute attach="attributes-color" args={[edgeColors, 3]} />
+                    </bufferGeometry>
+                    <lineBasicMaterial vertexColors={true} lineWidth={40} />
+                    </lineSegments>
+
                 </mesh>
 
                 <mesh> 
@@ -515,6 +524,8 @@ const PatternViewer = (props) => {
                     </bufferGeometry>
                     <meshBasicMaterial color={'white'} wireframe={false} side={THREE.BackSide}/>
                 </mesh>
+
+                
             </RotateObject>
         </>
     );
