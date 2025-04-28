@@ -128,7 +128,7 @@ class SmoothFoldGeometry(CreasePattern):
         normalized_2 = n2 / np.linalg.norm(n2)
         
         dot_product = np.dot(normalized_1, normalized_2)
-        print('problem here?', dot_product)
+        # print('problem here?', dot_product)
         
         angle = np.arccos(np.clip(dot_product, -1, 1))
         
@@ -322,6 +322,12 @@ class SmoothFoldPatternVertex:
             "boundary": self.isBoundary
         }
         
+    def get_flat_vertex(self):
+        return self.parent_crease.flat_vertices[self.index]
+    
+    def get_new_vertex(self):
+        return self.parent_crease.new_vertices[self.index]
+    
     def check_boundary(self):
         for (i, edge) in enumerate(self.parent_crease.edges):
             if self.index in edge and self.parent_crease.edges_assignments[i] == 'B':
@@ -614,10 +620,18 @@ class SmoothFoldPatternEdge:
             "faceR": self.faceR,
             "fold_type": self.fold_type,
             "flat_length": f"{float(self.flat_length):.{5}g}",
-            "length": f"{float(self.length):.{5}g}",
+            "length": f"{float(self.get_length()):.{5}g}",
             "flat_sector": f"{np.rad2deg(float(self.sector_angle)):.{5}g}",
             "sector": f"{np.rad2deg(float(self.folded_sector_angle)):.{5}g}"
         }
+        
+    def get_length(self):
+        new_vertices = self.parent_vertex.parent_crease.new_vertices
+        end_pos = [x for x in self.edge_pointer if x != self.id[0]][0]
+        return np.linalg.norm(np.array(new_vertices[end_pos]) - np.array(new_vertices[self.id[0]]))
+    
+    def get_curve_angle(self):
+        return self.parent_vertex.parent_crease.calculate_fold_angles(self.faceL, self.faceR, self.fold_type)
         
     def calculate_direction_vector(self):
         """

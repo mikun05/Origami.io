@@ -15,7 +15,7 @@ export const backendLink = 'http://127.0.0.1:5000';
 
 
 const FoldVertexDialogue = (props) => {
-    const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults} = useContext(PatternContext);
+    const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults, origamiModel} = useContext(PatternContext);
     const [vertexPoint, setVertexPoint] = useState([0,0,0])
     const pattern = props.pattern
 
@@ -47,7 +47,7 @@ const FoldVertexDialogue = (props) => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps})
+        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, origamiModel})
             .then(response => {
                 props.changeSetUp(false)
                 setFoldPattern(response.data.pattern); 
@@ -178,7 +178,7 @@ const FoldEdgeDialogue = (props) => {
 }
 
 const PatternLoader = () => {
-    const { foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
+    const { origamiModel, foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
     const [setUp, changeSetUp] = useState(false)
 
     useEffect(() => {
@@ -235,7 +235,7 @@ const PatternLoader = () => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
+        axios.post(`${backendLink}/fold-edge-around-vertex`, { origamiModel, vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
             .then(response => {
                 changeSetUp(false)
                 setFoldPattern(response.data.pattern); 
@@ -301,7 +301,7 @@ const PatternLoader = () => {
                     </div>
 
                     <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'100rem', gap: '1rem', margin:'auto' }}> 
-                            {'AAAHHHH!!!'}
+                            {'AAAHHHH!!! FML'}
                             {/* onInput changes for every slide change regardless of whether the slider has stopped, onChange on triggers once slider stops and mouse press is false */}
                             
                     </div>

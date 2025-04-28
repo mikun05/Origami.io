@@ -9,7 +9,7 @@ import { backendLink } from "./PatternLoader";
 
 
 const Options = (props) => {
-    const {foldPattern, setFoldPattern} = useContext(PatternContext)
+    const {foldPattern, setFoldPattern, setOrigamiModel} = useContext(PatternContext)
 
     const updateFoldPattern = (e) => {
         console.log(e)
@@ -24,6 +24,10 @@ const Options = (props) => {
         .catch(error => console.error("Error fetching pattern data:", error));
     
         console.log(foldPattern)
+    }
+
+    const updateOrigamiModel = (e) => {
+        setOrigamiModel(e.target.value)
     }
 
     
@@ -52,7 +56,7 @@ const Options = (props) => {
         </div>
         <br></br>
         <div style={{backgroundColor: '#5868a8', color:'#fbfbfa', padding:'1rem 1rem', width:'14rem', height:'fit-content'}}>
-            <label >
+            <label onChange={(e) => updateOrigamiModel(e)}>
                 {"Origami Model:    "}
                     <select name="modelOptions" type="text"  defaultValue="CRR" required style={{width: '14rem', backgroundColor:'#fbfbfa'}}> 
                         <option value="CBH">Custom Bar-Hinge Model</option>

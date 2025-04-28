@@ -23,10 +23,11 @@ function App() {
   })
   const [uniformAngle, setUniformAngle] = useState(180)
   const [foldResults, setFoldResults] = useState(null)
+  const [origamiModel, setOrigamiModel] = useState('CRR')
  
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap:'1rem'}} >
-        <PatternContext.Provider value={{ focusedVertexIndex, setFocusedVertexIndex, focusedEdgeIndex, setFocusedEdgeIndex, focusedVertexEdges, setFocusedVertexEdges, foldPattern, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, foldResults, setFoldResults }}>                           
+        <PatternContext.Provider value={{ origamiModel, setOrigamiModel, focusedVertexIndex, setFocusedVertexIndex, focusedEdgeIndex, setFocusedEdgeIndex, focusedVertexEdges, setFocusedVertexEdges, foldPattern, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, foldResults, setFoldResults }}>                           
           <PatternLoader />
         </PatternContext.Provider>
     </div>

@@ -424,6 +424,7 @@ def fold_edges_around_vertex():
     angle = data.get("angle")
     sym = data.get("sym")
     slider = data.get("slider")
+    model = data.get('origamiModel')
     
     print('slkide', slider)
     
@@ -449,7 +450,7 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
-    results = approx_process(angleApprox_info, vertexApprox_info, vertex_index, pattern.vertex_objects, converted_angle)
+    results = approx_process(model, angleApprox_info, vertexApprox_info, pattern, vertex_index, pattern.vertex_objects, converted_angle)
     #l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
