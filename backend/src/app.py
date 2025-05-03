@@ -431,7 +431,7 @@ def fold_edges_around_vertex():
     #print('app',data.get("angleApproxMeth"), "SQP" )
     angleApprox_info = {
         'angleApproxMeth': data.get("angleApproxMeth", "SQP"),
-        'angleMaxIt': data.get("angleMaxIt", 200) if not slider else 1,
+        'angleMaxIt': data.get("angleMaxIt", 200) if not slider else 0,
         'angleFTol': data.get("angleFTol", 1e-10),
         'angleEps': data.get("angleEps", 1e-14),
     }

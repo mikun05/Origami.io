@@ -7,6 +7,7 @@ from vertex_point_optimisation import *
 import numpy as np
 import torch
 import random
+import time
 
 def rem_floating_point_errors(flt):
     return torch.where(torch.abs(flt) < 1e-7, torch.tensor(0.0), flt)
@@ -434,15 +435,19 @@ def objective_uniformity(angles, uniform_angle):
     
     return count
 
-def objective_uniformity_mean(angles, uniform_angle):
+def objective_uniformity_mean(angles, uniform_angle, n, main_vertex_start_index):
+    angle_sum = 0
     count = 0
     
     # print(angles)
-    for angle in angles:
-        count += angle
-    return np.sqrt((count / len(angles) - uniform_angle) ** 2)
+    for angle in angles[main_vertex_start_index: main_vertex_start_index+n]:
+        count += 1
+        angle_sum += angle
+        
+    return np.sqrt(((angle_sum / count) - uniform_angle) ** 2)
 
 def ssd_objective_angles(angles, uniform_angle, n, main_vertex_start_index):
+    #print('x:', angles)
     ssd = 0
     for angle in angles[main_vertex_start_index: main_vertex_start_index+n]:
         ssd += (angle - uniform_angle) ** 2
@@ -583,6 +588,7 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
                 new_start_angles.append(uniform_angle if i == vertex_index else edge.curve_angle)
         
     print('start', new_start_angles)
+    tic = time.perf_counter()
     new_angles = minimize(
         obj_fn,  # your objective function
         new_start_angles,
@@ -598,12 +604,14 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
                     'eps': eps
                 }
         )
+    toc = time.perf_counter()
+    print(f"SLSQP process in {toc - tic} seconds")
     
     # print(new_angles)
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
-    print('mews', new_angles.x)
+    print('mewss', [np.rad2deg(ang).item() for ang in new_angles.x])
     return new_angles.x
 
 def constraint_single_edge(angles,  main_vertex_start_index, pre_fold_angles, index, angle):
@@ -702,4 +710,64 @@ def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1
     
     return results
 
+
+
+def lbfg_obj_fn(angles, uniform_angle, n, main_vertex_start_index, vertex_index, vertices, weight):
+    return ((1-weight) * ssd_objective_angles(angles, uniform_angle, n, main_vertex_start_index)) + (weight * (norm_compute_transformations(vertex_index, vertices, main_vertex_start_index, angles, 0)[1]))
+
+def re_vamped_lbfg(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, eps, loop_weight=0.5):
+    vertex_obj = vertices[vertex_index]
+    num_edges = len(vertex_obj.surrounding_edges)
+    print('numb', num_edges)
+  
+        
+    if len(vertices) > 1:
+        pass
+
     
+    
+    ##Constraints:
+    ####-> keep angles of other vertices as fixed as possible but valid around the vertices also. 
+    
+    
+    
+    ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
+   # bend_around_vertex(vertex_obj, [uniform_angle]*num_edges)
+    print('prestart', uniform_angle)
+
+    start_angles = [uniform_angle] * num_edges#[ang.item() for ang in get_new_angles(vertex_obj)]
+    new_start_angles = []
+    
+    for (i, vertex) in enumerate(vertices):
+        if not (vertex.isBoundary): 
+            for edge in vertex.surrounding_edges: 
+                new_start_angles.append(uniform_angle if i == vertex_index else edge.curve_angle)
+    
+    print('start', new_start_angles)
+    tic = time.perf_counter()
+    new_angles = minimize(
+        lbfg_obj_fn,  # your objective function
+        new_start_angles,
+        (uniform_angle, num_edges, edge_start_dict[vertex_index], vertex_index, vertices, loop_weight),
+        method='L-BFGS-B',
+        #jac= jac_mean if hasJac else None,
+        bounds=[(np.deg2rad(0), np.deg2rad(180))] * len(new_start_angles),
+        options={
+                    'maxiter': maxiter,
+                    'disp': True,
+                    'ftol': ftol,
+                    'eps': eps
+                }
+        )
+    toc = time.perf_counter()
+    print(f"LBFGS process in {toc - tic:0.4f} seconds")
+    
+    print(new_angles)
+    ##seems to solve for angles properly ... intended angles are good.
+    ##what is visually folded differs drastically
+    
+    
+    print('mews', new_angles.x)
+    return new_angles.x
+
+

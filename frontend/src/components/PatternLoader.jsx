@@ -59,8 +59,8 @@ const FoldVertexDialogue = (props) => {
     // useEffect(() => {
     //     handleFoldEdge(uniformAngle)
     // }, [uniformAngle])
-
-
+      
+      
 
 
     return(
@@ -247,7 +247,7 @@ const PatternLoader = () => {
     // useEffect(() => {
     //     handleFoldEdge(uniformAngle)
     // }, [uniformAngle])
-
+      
 
     return (
         <div>    

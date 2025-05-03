@@ -32,8 +32,8 @@ def approx_process(model, angleApprox_info, vertexApprox_info, pattern_obj, vert
             case 'GD':
                 new_angles = gradient_descent(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'])
             case 'LBFGS':
-                #new_angles = re_vamped_lbfg(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
-                new_angles = l_bfgs_b(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
+                new_angles = re_vamped_lbfg(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
+                #new_angles = l_bfgs_b(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
             case 'Pos_Anneal_LBFGS':
                 new_angles = annealing_optimiser(vertex_obj, uniform_angle, maxiter=angleApprox['angleMaxIt'], ftol=angleApprox['angleFTol'], eps=angleApprox['angleEps'])
             case 'Neg_Anneal_LBFGS':

@@ -2,6 +2,7 @@ import numpy as np
 from angle_optimisation import *
 from smooth_fold_gens import *
 import matplotlib.pyplot as plt
+from scipy.interpolate import make_interp_spline
 
 angles_in_deg = np.arange(0,180+5, 5)
 
@@ -153,41 +154,190 @@ num_edges = len(vertex_obj.surrounding_edges)
 ##Graph SLQP with varying ftol and fix max iterations.
 ##Graph against number of iterations before termination and frobenius difference
 
-mean_frob_diff = []
-ssd_frob_diff = []
-angles = [uniform_angle for uniform_angle in range(0,180)]
+# mean_frob_diff = []
+# ssd_frob_diff = []
+# angles = [uniform_angle for uniform_angle in range(0,180)]
 
-for angle in angles:
-    uniform_angle = np.deg2rad(angle)
-    print('at', uniform_angle)
+# for angle in angles:
+#     uniform_angle = np.deg2rad(angle)
+#     print('at', uniform_angle)
 
-    angle_results_obj_mean = slsq(vertex_obj, uniform_angle, maxiter=200, ftol=1e-10, eps=1e-14)
-    # frob_diff = norm_compute_transformations(vertex_obj, angle_results_obj_mean, 0)[1]
-    mean_mean = ((np.sum(angle_results_obj_mean) / len(angle_results_obj_mean)) - uniform_angle) ** 2
-    mean_frob_diff.append(mean_mean)
+#     angle_results_obj_mean = slsq(vertex_obj, uniform_angle, maxiter=200, ftol=1e-10, eps=1e-14)
+#     # frob_diff = norm_compute_transformations(vertex_obj, angle_results_obj_mean, 0)[1]
+#     mean_mean = ((np.sum(angle_results_obj_mean) / len(angle_results_obj_mean)) - uniform_angle) ** 2
+#     mean_frob_diff.append(mean_mean)
     
-    angle_results_obj_ssd = slsq(vertex_obj, uniform_angle, maxiter=200, ftol=1e-10, eps=1e-14, obj_fn=ssd_objective_angles, hasJac=False)
-    #frob_diff_ssd = norm_compute_transformations(vertex_obj, angle_results_obj_ssd, 0)[1]
-    ssd_mean = ((np.sum(angle_results_obj_ssd) / len(angle_results_obj_ssd)) - uniform_angle) ** 2
-    ssd_frob_diff.append(ssd_mean)    
+#     angle_results_obj_ssd = slsq(vertex_obj, uniform_angle, maxiter=200, ftol=1e-10, eps=1e-14, obj_fn=ssd_objective_angles, hasJac=False)
+#     #frob_diff_ssd = norm_compute_transformations(vertex_obj, angle_results_obj_ssd, 0)[1]
+#     ssd_mean = ((np.sum(angle_results_obj_ssd) / len(angle_results_obj_ssd)) - uniform_angle) ** 2
+#     ssd_frob_diff.append(ssd_mean)    
 
 
 
     
-fig, ax = plt.subplots()
+# fig, ax = plt.subplots()
 
  
     
-#plt.plot(loop_weight, item[0], marker='o')
-ax.plot(angles, ssd_frob_diff, linewidth=1, label="Sum of Squared Differences")
-ax.plot(angles, mean_frob_diff, linewidth=1, label="Mean")
+# #plt.plot(loop_weight, item[0], marker='o')
+# ax.plot(angles, ssd_frob_diff, linewidth=1, label="Sum of Squared Differences")
+# ax.plot(angles, mean_frob_diff, linewidth=1, label="Mean")
 
 
     
-plt.xlabel('Uniform Angles')
-plt.ylabel('Mean') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
+# plt.xlabel('Uniform Angles')
+# plt.ylabel('Mean') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
+# # plt.ylabel('Loop Closure Residual (Frobenius Norm)')
+# plt.title('Comparing Objective Functions. Mean vs Sum of Squared Differences')
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+
+
+
+############################Loopwieghts for icosahedron
+
+
+# res = {}
+# angles = [np.deg2rad(uniform_angle) for uniform_angle in range(1,180)]
+
+radius = 10
+n = 16
+angle_step = 2 * np.pi / n
+
+ico_star = {
+    "vertices_coords": [[0, 0, 0]],  # center vertex (0)
+    "edges_vertices": [],
+    "faces_vertices": [],
+    "edges_assignment": []
+}
+
+# Add outer vertices (1 to 11)
+for i in range(n):
+    angle = i * angle_step
+    x = round(radius * np.cos(angle), 5)
+    y = round(radius * np.sin(angle), 5)
+    ico_star["vertices_coords"].append([x, y, 0])
+
+# Add radial creases (center to outer vertices)
+for i in range(1, n + 1):
+    ico_star["edges_vertices"].append([0, i])
+    assignment = "M" if i % 2 == 1 else "V"
+    ico_star["edges_assignment"].append(assignment)
+
+# Add outer ring edges and boundary assignments
+for i in range(1, n + 1):
+    next_i = i + 1 if i < n else 1
+    ico_star["edges_vertices"].append([i, next_i])
+    ico_star["edges_assignment"].append("B")
+
+# Add triangular faces (center, vertex i, vertex i+1)
+for i in range(1, n + 1):
+    next_i = i + 1 if i < n else 1
+    ico_star["faces_vertices"].append([0, i, next_i])
+    
+pattern = SmoothFoldPattern(ico_star)
+vertices = pattern.vertex_objects
+
+# edge_start_dict = {}
+# pos = 0
+# for (i, vert) in enumerate(vertices):        
+#     if not vert.isBoundary:
+#         edge_start_dict[i] = pos
+#         pos += len(vert.surrounding_edges)
+
+# for weight in np.linspace(0, 1, 20): 
+#     min_val = np.inf
+#     for angle in angles:
+#         min_val = min(re_vamped_lbfg(0, vertices, edge_start_dict, angle, maxiter=200, ftol=10, eps=14, loop_weight=weight).fun, min_val)
+#     res[weight] = min_val
+    
+
+# print(res)
+    
+# fig, ax = plt.subplots()
+
+
+# weights = list(res.keys())
+# min_vals = list(res.values())
+
+    
+# #plt.plot(loop_weight, item[0], marker='o')
+
+# X_Y_Spline = make_interp_spline(weights, min_vals)
+
+# # Returns evenly spaced numbers
+# # over a specified interval.
+# X_ = np.linspace(0, 1, 500)
+# Y_ = X_Y_Spline(X_)
+
+# plt.plot(X_, Y_)
+
+
+    
+# plt.xlabel('λ')
+# plt.ylabel('f*(λ)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
+# # plt.ylabel('Loop Closure Residual (Frobenius Norm)')
+# plt.title('Linear Weight for Icoshaderon')
+# plt.legend()
+# plt.grid(True)
+# plt.show()
+
+
+#####Checking Graphing speed
+res = {}
+angles = [np.deg2rad(uniform_angle) for uniform_angle in range(0,181)]
+
+radius = 10
+n = 16
+angle_step = 2 * np.pi / n
+
+# vertices = pattern.vertex_objects
+
+edge_start_dict = {}
+pos = 0
+for (i, vert) in enumerate(vertices):        
+    if not vert.isBoundary:
+        edge_start_dict[i] = pos
+        pos += len(vert.surrounding_edges)
+
+for angle in angles: 
+    time = slsq(0, vertices, edge_start_dict, angle, 200, 10, 14, obj_fn=ssd_objective_angles, hasJac=False)
+    res[int(np.rad2deg(angle))] = time
+    
+
+print(res)
+    
+fig, ax = plt.subplots()
+
+
+angles = np.array(list(res.keys()))
+times = np.array(list(res.values()))
+
+print(angles)
+plt.scatter(angles, times, color='orange', s=5)
+
+#plt.plot(loop_weight, item[0], marker='o')
+
+X_Y_Spline = make_interp_spline(angles, times)
+
+# Returns evenly spaced numbers
+# over a specified interval.
+# X_ = np.linspace(0, 180, 500)
+# Y_ = X_Y_Spline(X_)
+
+# plt.plot(X_, Y_)
+a, b = np.polyfit(angles, times, 1)
+plt.plot(angles, a*angles+b)
+
+plt.text(50, 0.0035, 'y = ' + '{:5f}'.format(b) + ' + {:5f}'.format(a) + 'x', size=10)
+
+plt.xlabel('Dihedral Angle U')
+plt.ylabel('time(s)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
 # plt.ylabel('Loop Closure Residual (Frobenius Norm)')
-plt.title('Comparing Objective Functions. Mean vs Sum of Squared Differences')
+plt.title('Runtime vs Fold Dihedral Angle for Waterbomb Base using SLSQP')
 plt.legend()
 plt.grid(True)
 plt.show()
+
