@@ -717,7 +717,7 @@ def slsq_specific_edge(vertices, vertex_index, angle, index, maxiter=200, ftol=1
 def lbfg_obj_fn(angles, uniform_angle, n, main_vertex_start_index, vertex_index, vertices, weight):
     return ((1-weight) * ssd_objective_angles(angles, uniform_angle, n, main_vertex_start_index)) + (weight * (norm_compute_transformations(vertex_index, vertices, main_vertex_start_index, angles, 0)[1]))
 
-def re_vamped_lbfg(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, eps, loop_weight=0.5):
+def re_vamped_lbfg(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, eps, loop_weight=0.75):
     vertex_obj = vertices[vertex_index]
     num_edges = len(vertex_obj.surrounding_edges)
     print('numb', num_edges)

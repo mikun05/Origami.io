@@ -27,9 +27,11 @@ const FoldVertexDialogue = (props) => {
         setVertexPoint(pattern['fold_format'][0]['vertices'][focusedVertexIndex] ?? [])
     }, [pattern, focusedVertexIndex])
 
-
-    const handleFoldEdge = (inputAngle) => {
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    const handleFoldEdge = (inputAngle, animate=false) => {
         if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
+        props.setIsFolding(true)
         // e.preventDefault();
 
         // const form = e.target;
@@ -47,11 +49,39 @@ const FoldVertexDialogue = (props) => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, origamiModel})
-            .then(response => {
+        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, origamiModel, animate})
+            .then(async (response) => {
                 props.changeSetUp(false)
-                setFoldPattern(response.data.pattern); 
-                setFoldResults(response.data.approx_results);  
+                const animationFrames = response.data.interpolated_animation; 
+                const finalPattern = response.data.pattern;
+                const approxResults = response.data.approx_results;
+
+                if (animate) {
+                    for (let i = 0; i < animationFrames.length; i++) {
+                        const intermediatePattern = {
+                            ...finalPattern,
+                            fold_format: [
+                                {
+                                    ...finalPattern.fold_format[0],
+                                    vertices: animationFrames[i].map(v => [...v])
+                                }
+                            ]
+                        };                        
+                        console.log('animationFrame', animationFrames[i])
+                        console.log('intermediatePattern', intermediatePattern)
+                        setFoldPattern(intermediatePattern);
+                        
+                        await sleep(150); // control animation speed
+                    }
+                }
+
+                // Always set final results at the end
+                setFoldPattern(finalPattern);
+                setFoldResults(approxResults);
+                props.setIsFolding(false)
+
+                // setFoldPattern(response.data.pattern); 
+                // setFoldResults(response.data.approx_results);  
             })
             .catch(error => console.error("Error folding around vertex:", error));
     };
@@ -59,6 +89,7 @@ const FoldVertexDialogue = (props) => {
     // useEffect(() => {
     //     handleFoldEdge(uniformAngle)
     // }, [uniformAngle])
+
       
       
 
@@ -77,8 +108,9 @@ const FoldVertexDialogue = (props) => {
             <input onChange={(e) => {setUniformAngle(e.target.value)}} name="uniformFoldEdgesAroundVertexAngle" type="number" defaultValue={uniformAngle} value={uniformAngle} min="0" max="180" required style={{width: '1.5rem'}}/>°
             </label>
             <br></br><br></br>
-            <div style={{display:'flex', flexDirection: 'row', gap:'0.5rem'}}>
+            <div style={{display:'flex', flexDirection: 'row', gap:'1.25rem'}}>
                 <button onClick={() => handleFoldEdge(uniformAngle)} style={{height: '2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Fold</button>
+                <button onClick={() => handleFoldEdge(uniformAngle, true)} style={{height: '2rem', width:'5rem', padding:'auto', fontSize: '0.8rem'}}>Animate</button>
             </div>
         </div>
     )
@@ -133,6 +165,8 @@ const FoldEdgeDialogue = (props) => {
         if (focusedVertexIndex === undefined || focusedVertexIndex === null || focusedEdgeIndex === undefined || focusedEdgeIndex === null) return;
         e.preventDefault();
 
+        props.setIsFolding(true)
+
         const form = e.target;
         const formData = new FormData(form);
         const vertexIndex = focusedVertexIndex
@@ -154,6 +188,7 @@ const FoldEdgeDialogue = (props) => {
             .then(response => {
                 setFoldPattern(response.data.pattern); 
                 setFoldResults(response.data.approx_results);  
+                props.setIsFolding(false)
             })
             .catch(error => console.error("Error folding edge:", error));
     };
@@ -183,6 +218,7 @@ const PatternLoader = () => {
     const[pendingAngle, setPendingAngle] = useState(null)
     const pendingAngleRef = useRef(null); // avoid stale closures
     const foldingIdRef = useRef(0);
+    const [isFolding, setIsFolding] = useState(false);
     
 
 
@@ -222,7 +258,7 @@ const PatternLoader = () => {
 
     const simulateFolding = async (currentAngle) => {
         const currentId = ++foldingIdRef.current; // bump ID, this allows us to stop a previous folding process when a new one is started. When the slider is dragged again
-        
+        setIsFolding(true)
         let angle = Number(currentAngle);
     
         while (true) {
@@ -256,10 +292,12 @@ const PatternLoader = () => {
         // Only unset if still the current run
         if (foldingIdRef.current === currentId) {
             handleFoldEdge(Number(pendingAngleRef.current), false)
+            setIsFolding(false)
         }
     };
 
     const handleFoldEdge = (inputAngle, slide) => {
+        setIsFolding(true)
         let duration = 0
         if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
 
@@ -287,6 +325,7 @@ const PatternLoader = () => {
                 setFoldResults(response.data.approx_results);  
                 duration = response.data.duration;
                 console.log("Backend processing time (ms):", duration);
+                setIsFolding(false)
                 return duration
             })
             .catch(error => {console.error("Error folding around vertex:", error); return 0});
@@ -306,9 +345,9 @@ const PatternLoader = () => {
                         <div style={{ width:'15rem'}}>
                             <h2 style={{margin: 'auto'}}>Fold Pattern Viewer</h2>
                             <br></br>
-                            {(focusedVertexIndex !== null) ? <FoldVertexDialogue pattern={foldPattern} changeSetUp={changeSetUp}/> : <></>}
+                            {(focusedVertexIndex !== null) ? <FoldVertexDialogue pattern={foldPattern} changeSetUp={changeSetUp} setIsFolding={setIsFolding}/> : <></>}
                             <br></br><br></br>
-                            {(focusedEdgeIndex !== null) ? <FoldEdgeDialogue  /> : <></>}
+                            {(focusedEdgeIndex !== null) ? <FoldEdgeDialogue setIsFolding={setIsFolding} /> : <></>}
                             <VertexViewer vertexIndex={focusedVertexIndex} pattern={foldPattern}/>
                             <br></br><br></br><br></br>
                             <button onClick={resetPattern} style={{height: '3rem', margin: 'auto', }}>Reset Fold Pattern</button>
@@ -345,8 +384,7 @@ const PatternLoader = () => {
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
                             <Options setUp={setUp} changeSetUp={changeSetUp} />
                             <br></br><br></br>
-
-
+                            {isFolding ? 'folding...' : ''}
                         </div>
                         
 

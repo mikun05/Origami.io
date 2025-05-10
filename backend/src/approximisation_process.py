@@ -20,7 +20,7 @@ def approx_process(model, angleApprox_info, vertexApprox_info, pattern_obj, vert
             
     print('XXXXXXXXXXXXXedge start dict', edge_start_dict)
         
-
+    vertex_points_start = pattern_obj.geom.new_vertices.copy()
     
     print('ANGLE APPROXIMATION WITH', angleApprox['angleApproxMeth'])
     print('model', model)
@@ -60,7 +60,8 @@ def approx_process(model, angleApprox_info, vertexApprox_info, pattern_obj, vert
                 new_angles += [ang.item() for ang in get_new_angles(vert)]
                 
         print('nrew', new_angles)
-                
+        
+        results['vertex_points'] = vertex_points_start
         results['angle_approx_loop_closure'] = f"{float(norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[1]):.{8}g}"
         results['angle_approx_loop_closure_matrix'] = [[f"{float(item):.{3}g}" for item in row] for row in norm_compute_transformations(vertex_index, vertices, edge_start_dict[vertex_index], new_angles, 0)[0].tolist()]
 
@@ -73,6 +74,8 @@ def approx_process(model, angleApprox_info, vertexApprox_info, pattern_obj, vert
     
     else:
         slsqp_bar_hinge(pattern_obj, uniform_angle)
+        results['vertex_points'] = vertex_points_start
+
         results['angle_approx_loop_closure'] = 0
         results['angle_approx_loop_closure_matrix'] = [[0,0,0],[0,0,0],[0,0,0]]
 
@@ -85,3 +88,23 @@ def approx_process(model, angleApprox_info, vertexApprox_info, pattern_obj, vert
 def begin_approx(foldInfo):
     if angleApprox['angleApproxMeth'] == 'SQP':
         pass
+    
+    
+def interp_anim_process(start_vertices, end_vertices, steps):
+    vertices_at_steps = []
+    n = len(start_vertices)
+    
+    vector_from_start_to_end = [np.array(end_vertices[i]) - np.array(start_vertices[i]) for i in range(n)]
+    
+    for i in range(steps+1):
+        frac = i / steps
+        vertices_step_i = []
+        for j in range(n):
+            start_v = start_vertices[j]
+            end_v = end_vertices[j]
+            
+            interp_v = [((end_v[k] - start_v[k]) * frac) + start_v[k] for k in range(3)]
+            vertices_step_i.append(interp_v)
+        vertices_at_steps.append(vertices_step_i)
+        
+    return vertices_at_steps

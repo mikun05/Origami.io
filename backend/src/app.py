@@ -427,6 +427,7 @@ def fold_edges_around_vertex():
     sym = data.get("sym")
     slider = data.get("slider")
     model = data.get('origamiModel')
+    animate = data.get('animate')
     
     print('slkide', slider)
     
@@ -455,6 +456,13 @@ def fold_edges_around_vertex():
     tic = time.perf_counter()
     results = approx_process(model, angleApprox_info, vertexApprox_info, pattern, vertex_index, pattern.vertex_objects, converted_angle)
     toc = time.perf_counter()
+    start_vertices = results['vertex_points']
+
+    end_vertices = pattern.geom.new_vertices
+    print('e', end_vertices)
+    print('s', start_vertices)
+    animation_steps = interp_anim_process(start_vertices, end_vertices, 10) if animate else []
+
 
     #l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
@@ -468,7 +476,8 @@ def fold_edges_around_vertex():
     fold_output = {
         'pattern': pattern_dict,
         'approx_results': results,
-        'duration': toc-tic
+        'duration': toc-tic,
+        'interpolated_animation': animation_steps if animate else []
     }
     return jsonify(fold_output)
 
