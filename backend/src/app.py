@@ -8,6 +8,8 @@ from smooth_fold_gens import *
 from edge_fold import *
 from angle_optimisation import *
 from approximisation_process import *
+import time
+
 
 app = Flask(__name__)
 CORS(app)
@@ -450,7 +452,10 @@ def fold_edges_around_vertex():
 
     converted_angle = np.deg2rad(angle)
     
+    tic = time.perf_counter()
     results = approx_process(model, angleApprox_info, vertexApprox_info, pattern, vertex_index, pattern.vertex_objects, converted_angle)
+    toc = time.perf_counter()
+
     #l_bfgs_b(pattern.vertex_objects[vertex_index], converted_angle)
 
     #bend_around_vertex(pattern.vertex_objects[vertex_index], converted_angle)
@@ -462,7 +467,8 @@ def fold_edges_around_vertex():
     print('fold', pattern_dict['fold_format'][0]['vertices'])
     fold_output = {
         'pattern': pattern_dict,
-        'approx_results': results
+        'approx_results': results,
+        'duration': toc-tic
     }
     return jsonify(fold_output)
 

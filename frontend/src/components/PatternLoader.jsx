@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { Canvas } from '@react-three/fiber';
 import axios from "axios";
 import PatternViewer from "./PatternViewer";
@@ -180,6 +180,11 @@ const FoldEdgeDialogue = (props) => {
 const PatternLoader = () => {
     const { origamiModel, foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
     const [setUp, changeSetUp] = useState(false)
+    const[pendingAngle, setPendingAngle] = useState(null)
+    const pendingAngleRef = useRef(null); // avoid stale closures
+    const foldingIdRef = useRef(0);
+    
+
 
     useEffect(() => {
         fetchFoldPattern();
@@ -215,12 +220,51 @@ const PatternLoader = () => {
 
     }
 
-    const handleFoldEdge = (inputAngle, slide) => {
-        if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
-        // e.preventDefault();
+    const simulateFolding = async (currentAngle) => {
+        const currentId = ++foldingIdRef.current; // bump ID, this allows us to stop a previous folding process when a new one is started. When the slider is dragged again
+        
+        let angle = Number(currentAngle);
+    
+        while (true) {
+            console.log('calling fold for', angle)
+            if (foldingIdRef.current !== currentId) break; // a new run started — cancel this one
+            const duration = await handleFoldEdge(angle, false);
+            console.log('duration', duration)
+            // Decide skip size
+            let skip = 1;
+            if (duration > 0.1) skip = 3;
+            if (duration > 1) skip = 5;
+            if (duration > 2) skip = 10;
+    
+            const target = Number(pendingAngleRef.current);
+            const direction = target > angle ? 1 : -1;
+    
+            const nextAngle = angle + skip * direction;
+            console.log('nextAngle', nextAngle)
+            
+            // Stop when reached or overshot
+            if ((direction > 0 && nextAngle > target) ||
+                (direction < 0 && nextAngle < target) ||
+                nextAngle === angle) {
+                break;
+            }
+    
+            angle = nextAngle;
 
-        // const form = e.target;
-        // const formData = new FormData(form);
+        }
+    
+        // Only unset if still the current run
+        if (foldingIdRef.current === currentId) {
+            handleFoldEdge(Number(pendingAngleRef.current), false)
+        }
+    };
+
+    const handleFoldEdge = (inputAngle, slide) => {
+        let duration = 0
+        if (focusedVertexIndex === undefined || focusedVertexIndex === null || inputAngle == null) return;
+
+        console.log('actual folding', inputAngle)
+
         const slider = slide
         const vertexIndex = focusedVertexIndex
         const angle = Number(inputAngle)
@@ -235,19 +279,20 @@ const PatternLoader = () => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { origamiModel, vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
+        
+        return axios.post(`${backendLink}/fold-edge-around-vertex`, { origamiModel, vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
             .then(response => {
                 changeSetUp(false)
                 setFoldPattern(response.data.pattern); 
                 setFoldResults(response.data.approx_results);  
+                duration = response.data.duration;
+                console.log("Backend processing time (ms):", duration);
+                return duration
             })
-            .catch(error => console.error("Error folding around vertex:", error));
+            .catch(error => {console.error("Error folding around vertex:", error); return 0});
     };
 
-    // useEffect(() => {
-    //     handleFoldEdge(uniformAngle)
-    // }, [uniformAngle])
-      
+
 
     return (
         <div>    
@@ -278,9 +323,17 @@ const PatternLoader = () => {
 
                             <input 
                                 type="range" 
-                                onInput={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, true)}}  
-                                // onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
-                                onMouseUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                onInput={(e) => {
+                                    const value = Number(e.target.value);
+                                    setUniformAngle(value);
+                                    setPendingAngle(value);
+                                    pendingAngleRef.current = value;
+                                    if (foldOptions.angleApproxMeth == 'NA') {handleFoldEdge(pendingAngleRef.current, false)}; //folds differently for naive folding technique
+
+                                }}
+                                onPointerDown={() => simulateFolding(pendingAngleRef.current)}
+                                //onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
+                                // onMouseDown={(e) => {setPendingAngle(e.target.value); simulateFolding(e.target.value)}}  
                                 name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
                         </div>
 
