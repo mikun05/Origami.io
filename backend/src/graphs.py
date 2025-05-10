@@ -3,6 +3,8 @@ from angle_optimisation import *
 from smooth_fold_gens import *
 import matplotlib.pyplot as plt
 from scipy.interpolate import make_interp_spline
+import seaborn as sns
+import pandas as pd
 
 angles_in_deg = np.arange(0,180+5, 5)
 
@@ -200,7 +202,7 @@ num_edges = len(vertex_obj.surrounding_edges)
 
 
 # res = {}
-# angles = [np.deg2rad(uniform_angle) for uniform_angle in range(1,180)]
+# # angles = [np.deg2rad(uniform_angle) for uniform_angle in range(1,180)]
 
 radius = 10
 n = 16
@@ -238,7 +240,62 @@ for i in range(1, n + 1):
     ico_star["faces_vertices"].append([0, i, next_i])
     
 pattern = SmoothFoldPattern(ico_star)
-vertices = pattern.vertex_objects
+# vertices = pattern.vertex_objects
+
+# # edge_start_dict = {}
+# # pos = 0
+# # for (i, vert) in enumerate(vertices):        
+# #     if not vert.isBoundary:
+# #         edge_start_dict[i] = pos
+# #         pos += len(vert.surrounding_edges)
+
+# # for weight in np.linspace(0, 1, 20): 
+# #     min_val = np.inf
+# #     for angle in angles:
+# #         min_val = min(re_vamped_lbfg(0, vertices, edge_start_dict, angle, maxiter=200, ftol=10, eps=14, loop_weight=weight).fun, min_val)
+# #     res[weight] = min_val
+    
+
+# # print(res)
+    
+# # fig, ax = plt.subplots()
+
+
+# # weights = list(res.keys())
+# # min_vals = list(res.values())
+
+    
+# # #plt.plot(loop_weight, item[0], marker='o')
+
+# # X_Y_Spline = make_interp_spline(weights, min_vals)
+
+# # # Returns evenly spaced numbers
+# # # over a specified interval.
+# # X_ = np.linspace(0, 1, 500)
+# # Y_ = X_Y_Spline(X_)
+
+# # plt.plot(X_, Y_)
+
+
+    
+# # plt.xlabel('λ')
+# # plt.ylabel('f*(λ)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
+# # # plt.ylabel('Loop Closure Residual (Frobenius Norm)')
+# # plt.title('Linear Weight for Icoshaderon')
+# # plt.legend()
+# # plt.grid(True)
+# # plt.show()
+
+
+# #####Checking Graphing speed
+# res = {}
+# angles = [np.deg2rad(uniform_angle) for uniform_angle in range(0,181)]
+
+# radius = 10
+# n = 16
+# angle_step = 2 * np.pi / n
+
+# # vertices = pattern.vertex_objects
 
 # edge_start_dict = {}
 # pos = 0
@@ -247,11 +304,9 @@ vertices = pattern.vertex_objects
 #         edge_start_dict[i] = pos
 #         pos += len(vert.surrounding_edges)
 
-# for weight in np.linspace(0, 1, 20): 
-#     min_val = np.inf
-#     for angle in angles:
-#         min_val = min(re_vamped_lbfg(0, vertices, edge_start_dict, angle, maxiter=200, ftol=10, eps=14, loop_weight=weight).fun, min_val)
-#     res[weight] = min_val
+# for angle in angles: 
+#     time = slsq(0, vertices, edge_start_dict, angle, 200, 10, 14, obj_fn=ssd_objective_angles, hasJac=False)
+#     res[int(np.rad2deg(angle))] = time
     
 
 # print(res)
@@ -259,41 +314,45 @@ vertices = pattern.vertex_objects
 # fig, ax = plt.subplots()
 
 
-# weights = list(res.keys())
-# min_vals = list(res.values())
+# angles = np.array(list(res.keys()))
+# times = np.array(list(res.values()))
 
-    
+# print(angles)
+# plt.scatter(angles, times, color='orange', s=5)
+
 # #plt.plot(loop_weight, item[0], marker='o')
 
-# X_Y_Spline = make_interp_spline(weights, min_vals)
+# X_Y_Spline = make_interp_spline(angles, times)
 
 # # Returns evenly spaced numbers
 # # over a specified interval.
-# X_ = np.linspace(0, 1, 500)
-# Y_ = X_Y_Spline(X_)
+# # X_ = np.linspace(0, 180, 500)
+# # Y_ = X_Y_Spline(X_)
 
-# plt.plot(X_, Y_)
+# # plt.plot(X_, Y_)
+# a, b = np.polyfit(angles, times, 1)
+# plt.plot(angles, a*angles+b)
 
+# plt.text(50, 0.0035, 'y = ' + '{:5f}'.format(b) + ' + {:5f}'.format(a) + 'x', size=10)
 
-    
-# plt.xlabel('λ')
-# plt.ylabel('f*(λ)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
+# plt.xlabel('Dihedral Angle U')
+# plt.ylabel('time(s)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
 # # plt.ylabel('Loop Closure Residual (Frobenius Norm)')
-# plt.title('Linear Weight for Icoshaderon')
+# plt.title('Runtime vs Fold Dihedral Angle for Waterbomb Base using SLSQP')
 # plt.legend()
 # plt.grid(True)
 # plt.show()
 
 
-#####Checking Graphing speed
-res = {}
+#####HEATMAP FOR PARAMETER TUNING
+ftol_values = [i for i in range(1, 16)]
+eps_values = [i for i in range(1, 16)]
+
+
+res = np.zeros((15, 15))
+
 angles = [np.deg2rad(uniform_angle) for uniform_angle in range(0,181)]
-
-radius = 10
-n = 16
-angle_step = 2 * np.pi / n
-
-# vertices = pattern.vertex_objects
+vertices = pattern.vertex_objects
 
 edge_start_dict = {}
 pos = 0
@@ -302,42 +361,32 @@ for (i, vert) in enumerate(vertices):
         edge_start_dict[i] = pos
         pos += len(vert.surrounding_edges)
 
-for angle in angles: 
-    time = slsq(0, vertices, edge_start_dict, angle, 200, 10, 14, obj_fn=ssd_objective_angles, hasJac=False)
-    res[int(np.rad2deg(angle))] = time
-    
+for ftol in ftol_values:
+    for eps in eps_values:
+        total_performance_over_all_angles = 0
+        for angle in angles:
+            print(ftol, eps, np.deg2rad(angle))
+            total_performance_over_all_angles += slsq(0, vertices, edge_start_dict, angle, maxiter=1000, ftol=ftol, eps=eps, obj_fn=ssd_objective_angles, hasJac=False)
+        res[eps-1][ftol-1] = total_performance_over_all_angles/len(angles)
+        
+#          total_performance_over_all_angles = 0
+#         for angle in angles:
+#             curr = slsq(6, vertices, edge_start_dict, angle, maxiter=200, ftol=ftol, eps=eps, obj_fn=ssd_objective_angles, hasJac=False)
+#             total_performance_over_all_angles = max( curr, total_performance_over_all_angles)
 
-print(res)
-    
-fig, ax = plt.subplots()
+# print(res)
+eps_labels = [f"$10^{{-{i+1}}}$" for i in range(15)]
+ftol_labels = [f"$10^{{-{i+1}}}$" for i in range(15)]
 
+df = pd.DataFrame(res, index=eps_labels, columns=ftol_labels)
+# df = pd.DataFrame(results, index=eps_values, columns=ftol_values)
 
-angles = np.array(list(res.keys()))
-times = np.array(list(res.values()))
-
-print(angles)
-plt.scatter(angles, times, color='orange', s=5)
-
-#plt.plot(loop_weight, item[0], marker='o')
-
-X_Y_Spline = make_interp_spline(angles, times)
-
-# Returns evenly spaced numbers
-# over a specified interval.
-# X_ = np.linspace(0, 180, 500)
-# Y_ = X_Y_Spline(X_)
-
-# plt.plot(X_, Y_)
-a, b = np.polyfit(angles, times, 1)
-plt.plot(angles, a*angles+b)
-
-plt.text(50, 0.0035, 'y = ' + '{:5f}'.format(b) + ' + {:5f}'.format(a) + 'x', size=10)
-
-plt.xlabel('Dihedral Angle U')
-plt.ylabel('time(s)') ##Aim is for this to be as close as posible to 0 but only exactly 0 for angle = 0, 180
-# plt.ylabel('Loop Closure Residual (Frobenius Norm)')
-plt.title('Runtime vs Fold Dihedral Angle for Waterbomb Base using SLSQP')
-plt.legend()
-plt.grid(True)
+plt.figure(figsize=(8, 7))
+sns.heatmap(df, annot=False, fmt=".2f", cmap="BuPu", cbar_kws={"label": "Mean Frobenius Diff"})
+plt.xlabel("ftol")
+plt.ylabel("eps")
+plt.title("Mean Frobenius Diff by ftol and eps for Icosahedron")
+plt.tight_layout()
 plt.show()
 
+##cell (i, j) = mean performance for ftol[i], eps[j] across all 180 angles

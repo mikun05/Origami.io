@@ -122,6 +122,7 @@ const RotateObject = ({pivot, children}) => {
     const lastPointer = useRef({ x: 0, y: 0 });
     const [isRotatingZ, setIsRotatingZ] = useState(false);
     const [isRotatingX, setIsRotatingX] = useState(false);
+    const [isRotatingY, setIsRotatingY] = useState(false);
     const { gl } = useThree(); 
 
     const canvas = gl.domElement;
@@ -132,9 +133,10 @@ const RotateObject = ({pivot, children}) => {
         switch (event.button) {
             case 0:
                 setIsRotatingZ(true)
+                setIsRotatingX(true)
                 break;
             case 2:
-                setIsRotatingX(true)
+                setIsRotatingY(true)
                 break;
             default:
                 return;
@@ -143,10 +145,11 @@ const RotateObject = ({pivot, children}) => {
       };
   
       const handlePointerMove = (event) => {
-        if (!isRotatingZ && !isRotatingX) return;
+        if (!isRotatingZ && !isRotatingX && !isRotatingY) return;
   
         const deltaX = isRotatingZ ? event.clientX - lastPointer.current.x : 0
         const deltaY = isRotatingX ?  event.clientY - lastPointer.current.y : 0
+        const deltaZ = isRotatingY ?  event.clientX - lastPointer.current.x : 0
         lastPointer.current = { x: event.clientX, y: event.clientY };
   
         // Apply rotation to the pivot group
@@ -159,6 +162,7 @@ const RotateObject = ({pivot, children}) => {
                 groupRef.current.position.add(pivot);
                 groupRef.current.rotation.x += deltaY * rotationSpeed ; // Rotate around X-axis
                 groupRef.current.rotation.z += deltaX * rotationSpeed ; // Rotate around X-axis
+                groupRef.current.rotation.y += deltaZ * rotationSpeed ; // Rotate around X-axis
                 groupRef.current.position.sub(pivot);
 
                 
@@ -170,9 +174,10 @@ const RotateObject = ({pivot, children}) => {
         switch (event.button) {
             case 0:
                 setIsRotatingZ(false)
+                setIsRotatingX(false)
                 break;
             case 2:
-                setIsRotatingX(false)
+                setIsRotatingY(false)
                 break;
             default:
                 return;
@@ -188,7 +193,7 @@ const RotateObject = ({pivot, children}) => {
         canvas.removeEventListener("pointermove", handlePointerMove);
         canvas.removeEventListener("pointerup", handlePointerUp);
       };
-    }, [isRotatingX, isRotatingZ, groupRef]);
+    }, [isRotatingX, isRotatingZ, isRotatingY, groupRef]);
 
     return(
         <group ref={groupRef}>{children}</group>
@@ -477,8 +482,9 @@ const PatternViewer = (props) => {
     return (
         <>
             <CameraSetUp pointsRef={pointsRef}/>
+            <axesHelper position={[0,0,0]} scale={15} />
             <RotateObject pivot={canvasCenter}>
-                <axesHelper position={[0,0,0]} scale={15} />
+                
                 {/* <gridHelper position={canvasCenter} scale={5} rotation={new THREE.Euler( Math.PI / 2,0, 0)}/> */}
 {/* 
                 <lineSegments ref={linesRef} onClick={handleEdgePointerDown} lineWidth={40} >

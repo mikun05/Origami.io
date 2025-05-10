@@ -556,7 +556,7 @@ def constraints_on_other_angles(vertex_index, vertex_objs):
 def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, eps, obj_fn=ssd_objective_angles, hasJac=False):
     vertex_obj = vertices[vertex_index]
     num_edges = len(vertex_obj.surrounding_edges)
-    print('numb', num_edges)
+    #print('numb', num_edges)
   
         
         
@@ -577,7 +577,7 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
     
     ##Since Uniform angles already staisfy the objective function, input the failed rotation t uniform folds as x_0 of the optimisation process
    # bend_around_vertex(vertex_obj, [uniform_angle]*num_edges)
-    print('prestart', uniform_angle)
+    #print('prestart', uniform_angle)
 
     start_angles = [uniform_angle] * num_edges#[ang.item() for ang in get_new_angles(vertex_obj)]
     new_start_angles = []
@@ -587,14 +587,14 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
             for edge in vertex.surrounding_edges: 
                 new_start_angles.append(uniform_angle if i == vertex_index else edge.curve_angle)
         
-    print('start', new_start_angles)
+    #print('start', new_start_angles)
     tic = time.perf_counter()
     new_angles = minimize(
         obj_fn,  # your objective function
         new_start_angles,
         (uniform_angle, num_edges, edge_start_dict[vertex_index]),
         method='SLSQP',
-        jac= jac_mean if hasJac else None,
+        # jac= jac_mean if hasJac else None,
         constraints=constraints,
         bounds=[(np.deg2rad(0), np.deg2rad(180))] * len(new_start_angles),
         options={
@@ -605,13 +605,15 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
                 }
         )
     toc = time.perf_counter()
-    print(f"SLSQP process in {toc - tic} seconds")
+    #print(f"SLSQP process in {toc - tic} seconds")
     
     # print(new_angles)
     ##seems to solve for angles properly ... intended angles are good.
     ##what is visually folded differs drastically
     
-    print('mewss', [np.rad2deg(ang).item() for ang in new_angles.x])
+    # print('mewss', [np.rad2deg(ang).item() for ang in new_angles.x])
+    # print('fun', new_angles)
+    
     return new_angles.x
 
 def constraint_single_edge(angles,  main_vertex_start_index, pre_fold_angles, index, angle):
