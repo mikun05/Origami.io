@@ -215,8 +215,8 @@ const FoldEdgeDialogue = (props) => {
 const PatternLoader = () => {
     const { origamiModel, foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
     const [setUp, changeSetUp] = useState(false)
-    const[pendingAngle, setPendingAngle] = useState(null)
-    const pendingAngleRef = useRef(null); // avoid stale closures
+    const[pendingAngle, setPendingAngle] = useState(180)
+    const pendingAngleRef = useRef(180); // avoid stale closures
     const foldingIdRef = useRef(0);
     const [isFolding, setIsFolding] = useState(false);
     
@@ -392,7 +392,6 @@ const PatternLoader = () => {
                     </div>
 
                     <div style={{display: 'flex', flexDirection: 'row', backgroundColor: '#fbfbfa', width:'100rem', gap: '1rem', margin:'auto' }}> 
-                            {'AAAHHHH!!! FML'}
                             {/* onInput changes for every slide change regardless of whether the slider has stopped, onChange on triggers once slider stops and mouse press is false */}
                             
                     </div>

@@ -366,7 +366,7 @@ for ftol in ftol_values:
         total_performance_over_all_angles = 0
         for angle in angles:
             print(ftol, eps, np.deg2rad(angle))
-            total_performance_over_all_angles += slsq(0, vertices, edge_start_dict, angle, maxiter=1000, ftol=ftol, eps=eps, obj_fn=ssd_objective_angles, hasJac=False)
+            total_performance_over_all_angles += slsq(0, vertices, edge_start_dict, angle, maxiter=2000, ftol=ftol, eps=eps, obj_fn=ssd_objective_angles, hasJac=False)
         res[eps-1][ftol-1] = total_performance_over_all_angles/len(angles)
         
 #          total_performance_over_all_angles = 0
@@ -385,7 +385,7 @@ plt.figure(figsize=(8, 7))
 sns.heatmap(df, annot=False, fmt=".2f", cmap="BuPu", cbar_kws={"label": "Mean Frobenius Diff"})
 plt.xlabel("ftol")
 plt.ylabel("eps")
-plt.title("Mean Frobenius Diff by ftol and eps for Icosahedron")
+plt.title("Mean Frobenius Diff by ftol and eps for Hexadecagon")
 plt.tight_layout()
 plt.show()
 

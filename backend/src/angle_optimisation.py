@@ -614,7 +614,7 @@ def slsq(vertex_index, vertices, edge_start_dict, uniform_angle, maxiter, ftol, 
     # print('mewss', [np.rad2deg(ang).item() for ang in new_angles.x])
     # print('fun', new_angles)
     
-    return new_angles.x
+    return new_angles.x 
 
 def constraint_single_edge(angles,  main_vertex_start_index, pre_fold_angles, index, angle):
     """We want to minimise deviations of untouched angles, but get rotated angle to specified new angle

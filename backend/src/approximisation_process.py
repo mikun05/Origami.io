@@ -91,20 +91,19 @@ def begin_approx(foldInfo):
     
     
 def interp_anim_process(start_vertices, end_vertices, steps):
-    vertices_at_steps = []
+    all_steps = []
     n = len(start_vertices)
     
-    vector_from_start_to_end = [np.array(end_vertices[i]) - np.array(start_vertices[i]) for i in range(n)]
-    
+    start = [np.array(v) for v in start_vertices]
+    end = [np.array(v) for v in end_vertices]
+
     for i in range(steps+1):
         frac = i / steps
-        vertices_step_i = []
+        step_vertices = []
         for j in range(n):
-            start_v = start_vertices[j]
-            end_v = end_vertices[j]
-            
-            interp_v = [((end_v[k] - start_v[k]) * frac) + start_v[k] for k in range(3)]
-            vertices_step_i.append(interp_v)
-        vertices_at_steps.append(vertices_step_i)
+            interp_v = (((end[j] - start[j]) * frac) 
+                        + start[j]).tolist()
+            step_vertices.append(interp_v)
+        all_steps.append(step_vertices)
         
-    return vertices_at_steps
+    return all_steps
