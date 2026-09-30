@@ -3,15 +3,17 @@
 
 /frontend/build/
 
-/backend/venv/
+/backend/.venv/
 
 # Logs
 *.log
 
 # Environment variables
 .env
+.venv
 
 # Data and results
 /frontend/public/data
 *output.svg
 /results/
+/node_modules/
