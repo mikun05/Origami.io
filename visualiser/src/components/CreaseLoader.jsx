@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import CreaseMaker from './CreaseMaker';
 import { fileContext } from '../contexts/fileContext';
-
+import { BACKEND_URL } from '../config'
 
 const CreaseLoader = () => {
   const [file, setFile] = useState(null);
@@ -27,7 +27,7 @@ const CreaseLoader = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:5000/data', {
+      const response = await fetch(`${BACKEND_URL}/data`, {
         method: 'POST',
         body: formData
       });

@@ -5,8 +5,7 @@ import { useContext } from "react";
 
 import { PatternContext } from "../contexts/patternContext";
 import axios from "axios";
-import { backendLink } from "./PatternLoader";
-
+import { BACKEND_URL } from '../config'
 
 const Options = (props) => {
     const {foldPattern, setFoldPattern, setOrigamiModel} = useContext(PatternContext)
@@ -16,7 +15,7 @@ const Options = (props) => {
         const patternId = e.target.value
     
 
-        axios.post(`${backendLink}/get-fold-pattern`, { patternId })
+        axios.post(`${BACKEND_URL}/get-fold-pattern`, { patternId })
         .then(response => {
             props.changeSetUp(true)
             setFoldPattern(response.data); 

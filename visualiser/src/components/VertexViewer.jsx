@@ -3,8 +3,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { PatternContext } from '../contexts/patternContext';
 import axios from "axios";
-export const backendLink = 'http://127.0.0.1:5000';
-
+import { BACKEND_URL } from '../config'
 
 const VertexViewer = (props) => {
     const { focusedVertexIndex, setFocusedVertexEdges, focusedVertexEdges } = useContext(PatternContext);
@@ -35,7 +34,7 @@ const VertexViewer = (props) => {
 
     const fetchFoldVertex = (vertexIndex) => {
         console.log('getting', vertexIndex)
-        axios.get(`${backendLink}/get-vertex-info`, { params: {vertexIndex} })
+        axios.get(`${BACKEND_URL}/get-vertex-info`, { params: {vertexIndex} })
             .then(response => {
                 setVertexInfo(response.data);
             })

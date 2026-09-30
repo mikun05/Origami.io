@@ -10,9 +10,7 @@ import VertexViewer from "./VertexViewer";
 import ApproxOptions from "./ApproxOptions";
 import Options from "./Options";
 import Results from "./Results";
-
-export const backendLink = 'http://127.0.0.1:5000';
-
+import { BACKEND_URL } from '../config'
 
 const FoldVertexDialogue = (props) => {
     const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults, origamiModel} = useContext(PatternContext);
@@ -49,7 +47,7 @@ const FoldVertexDialogue = (props) => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, origamiModel, animate})
+        axios.post(`${BACKEND_URL}/fold-edge-around-vertex`, { vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, origamiModel, animate})
             .then(async (response) => {
                 props.changeSetUp(false)
                 const animationFrames = response.data.interpolated_animation; 
@@ -138,7 +136,7 @@ const FoldEdgeDialogue = (props) => {
         const vertexIndex = focusedVertexIndex
         const edgeIndex = focusedEdgeIndex 
 
-        axios.get(`${backendLink}/get-edge-info`, { params: { vertexIndex, edgeIndex }})
+        axios.get(`${BACKEND_URL}/get-edge-info`, { params: { vertexIndex, edgeIndex }})
         .then(response => {
             console.log('angle', response.data['angle'])
             setCurrentAngle( Math.round(response.data['angle'] * (180/Math.PI) * 100) / 100);
@@ -184,7 +182,7 @@ const FoldEdgeDialogue = (props) => {
         const vertexFTol = Math.pow(10, -Number(foldOptions.vertexFTol));
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
-        axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
+        axios.post(`${BACKEND_URL}/fold-edge`, { vertexIndex, edgeIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
             .then(response => {
                 setFoldPattern(response.data.pattern); 
                 setFoldResults(response.data.approx_results);  
@@ -227,7 +225,7 @@ const PatternLoader = () => {
     }, []);
 
     const fetchFoldPattern = () => {
-        axios.post(`${backendLink}/get-fold-pattern`, { patternId: 'wbb' })
+        axios.post(`${BACKEND_URL}/get-fold-pattern`, { patternId: 'wbb' })
             .then(response => {
                 changeSetUp(true)
                 setFoldPattern(response.data);
@@ -236,7 +234,7 @@ const PatternLoader = () => {
     };
 
     // const handleFoldEdge = (vertexIndex, edgeIndex, angle, sym) => {
-    //     axios.post(`${backendLink}/fold-edge`, { vertexIndex, edgeIndex, angle, sym })
+    //     axios.post(`${BACKEND_URL}/fold-edge`, { vertexIndex, edgeIndex, angle, sym })
     //         .then(response => {
     //             changeSetUp(false)
     //             setFoldPattern(response.data);  // Update with new fold state
@@ -246,7 +244,7 @@ const PatternLoader = () => {
 
     const resetPattern = () => {
         setUniformAngle(180)
-        axios.get(`${backendLink}/reset-pattern`)
+        axios.get(`${BACKEND_URL}/reset-pattern`)
         .then(response => {
             changeSetUp(true)
             setFoldPattern(response.data);  // Reset to pre-fold configuraton
@@ -318,7 +316,7 @@ const PatternLoader = () => {
         const vertexEps = Math.pow(10, -Number(foldOptions.vertexEps));
         
         
-        return axios.post(`${backendLink}/fold-edge-around-vertex`, { origamiModel, vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
+        return axios.post(`${BACKEND_URL}/fold-edge-around-vertex`, { origamiModel, vertexIndex, angle, sym, angleApproxMeth, angleMaxIt, angleFTol, angleEps, vertexPointMeth,vertexMaxIt, vertexFTol, vertexEps, slider})
             .then(response => {
                 changeSetUp(false)
                 setFoldPattern(response.data.pattern); 
