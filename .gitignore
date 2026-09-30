@@ -1,9 +1,9 @@
 # Node.js dependencies
-/frontend/node_modules/
+/visualiser/node_modules/
 
-/frontend/build/
+/visualiser/build/
 
-/backend/.venv/
+/simulation/.venv/
 
 # Logs
 *.log
@@ -13,7 +13,7 @@
 .venv
 
 # Data and results
-/frontend/public/data
+/visualiser/public/data
 *output.svg
 /results/
 /node_modules/

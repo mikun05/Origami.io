@@ -6,7 +6,7 @@ from parsers.dxf_parser import process_dxf_file, save_parsed_data_as_json
 
 dxf_upload_bp = Blueprint('dxf_upload', __name__)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../../../frontend/public/data')
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '../../../visualiser/public/data')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @dxf_upload_bp.route('/data', methods=['GET', 'POST'])
