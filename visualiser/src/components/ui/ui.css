@@ -1,0 +1,46 @@
+.menu-button {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.menu-button span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background-color: black;
+  border-radius: 2px;
+}
+
+
+.info-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid black;
+  border-radius: 50%;
+  background: transparent;
+  color: black;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.info-button:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.info-button:focus-visible {
+  outline: 2px solid black;
+  outline-offset: 3px;
+}

@@ -11,7 +11,9 @@ import ApproxOptions from "./ApproxOptions";
 import Options from "./Options";
 import Results from "./Results";
 import HelpModal from './HelpModal';
+import MenuButton from './ui/InfoButton';
 import { BACKEND_URL } from '../config'
+import InfoButton from "./ui/InfoButton";
 
 const FoldVertexDialogue = (props) => {
     const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults, origamiModel} = useContext(PatternContext);
@@ -340,39 +342,21 @@ const PatternLoader = () => {
             onClose={() => setIsHelpOpen(false)}
             />
             {foldPattern ? (
-                <div style={{display: 'flex', flexDirection: 'column', height: '50rem', margin: 'auto', padding:'0rem 2rem', gap: '1rem' }}>
+                <div style={{display: 'flex', flexDirection: 'column', height: '50rem', margin: 'auto', padding:'1rem 4rem', gap: '0.5rem' }}>
                     <br></br>
                     <br></br>
 
                     <div style={{display: 'flex', flexDirection: 'row', margin:'auto', gap:'1rem'}}> 
 
-                        <div style={{ width:'15rem'}}>
+                        <div style={{ width:'14rem'}}>
                             
                             <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.5rem'
                             }}>
-                            <h2 style={{ margin: 0 }}>Fold Pattern Viewer</h2>
-
-                            <button
-                                type="button"
-                                aria-label="How to use the simulator"
-                                title="How to use"
-                                onClick={() => setIsHelpOpen(true)}
-                                style={{
-                                background: 'transparent',
-                                color: 'black',
-                                border: '1px solid black',
-                                borderRadius: '50%',
-                                width: '24px',
-                                height: '24px',
-                                padding: 0,
-                                cursor: 'pointer'
-                                }}
-                            >
-                                i
-                            </button>
+                                <h2 style={{ margin: 0, fontSize: '1.25rem'}}>Fold Pattern Viewer</h2>
+                                <InfoButton label="How to use simulator" onClick={() => setIsHelpOpen(true)} />
                             </div>
 
                             <br></br>
@@ -386,7 +370,7 @@ const PatternLoader = () => {
                         </div>
 
 
-                        <div  style={{ width: '50rem', height: '40rem', backgroundColor: '#E2DCCB', margin:'auto'}}>
+                        <div  style={{ width: '48rem', height: '40rem', backgroundColor: '#E2DCCB', margin:'auto'}}>
                             <Canvas >
                                 <PatternViewer pattern={foldPattern} setUp={setUp}/>
                             </Canvas>
