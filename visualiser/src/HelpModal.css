@@ -1,0 +1,68 @@
+
+.help-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.help-modal {
+  background: #fbfbfa;
+  color: #1d2d4c;
+  width: 100%;
+  max-width: 540px;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.help-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.help-header h2 {
+  margin: 0;
+}
+
+.help-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.help-modal h3 {
+  margin-top: 1.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.help-modal li {
+  margin-bottom: 0.6rem;
+}
+
+.help-modal dt {
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.help-modal dd {
+  margin: 0.2rem 0 0;
+  color: #4b5563;
+}
+
+.help-note {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d6d9e0;
+  font-style: italic;
+}

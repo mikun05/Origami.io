@@ -10,6 +10,7 @@ import VertexViewer from "./VertexViewer";
 import ApproxOptions from "./ApproxOptions";
 import Options from "./Options";
 import Results from "./Results";
+import HelpModal from './HelpModal';
 import { BACKEND_URL } from '../config'
 
 const FoldVertexDialogue = (props) => {
@@ -211,6 +212,7 @@ const FoldEdgeDialogue = (props) => {
 }
 
 const PatternLoader = () => {
+    const [isHelpOpen, setIsHelpOpen] = useState(false);
     const { origamiModel, foldOptions, setFoldOptions, focusedVertexIndex, foldPattern, setFoldPattern, setFocusedEdgeIndex, focusedEdgeIndex, setUniformAngle, uniformAngle, setFoldResults} = useContext(PatternContext);
     const [setUp, changeSetUp] = useState(false)
     const[pendingAngle, setPendingAngle] = useState(180)
@@ -333,6 +335,10 @@ const PatternLoader = () => {
 
     return (
         <div>    
+            <HelpModal
+            isOpen={isHelpOpen}
+            onClose={() => setIsHelpOpen(false)}
+            />
             {foldPattern ? (
                 <div style={{display: 'flex', flexDirection: 'column', height: '50rem', margin: 'auto', padding:'0rem 2rem', gap: '1rem' }}>
                     <br></br>
@@ -341,7 +347,34 @@ const PatternLoader = () => {
                     <div style={{display: 'flex', flexDirection: 'row', margin:'auto', gap:'1rem'}}> 
 
                         <div style={{ width:'15rem'}}>
-                            <h2 style={{margin: 'auto'}}>Fold Pattern Viewer</h2>
+                            
+                            <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                            }}>
+                            <h2 style={{ margin: 0 }}>Fold Pattern Viewer</h2>
+
+                            <button
+                                type="button"
+                                aria-label="How to use the simulator"
+                                title="How to use"
+                                onClick={() => setIsHelpOpen(true)}
+                                style={{
+                                background: 'transparent',
+                                color: 'black',
+                                border: '1px solid black',
+                                borderRadius: '50%',
+                                width: '24px',
+                                height: '24px',
+                                padding: 0,
+                                cursor: 'pointer'
+                                }}
+                            >
+                                i
+                            </button>
+                            </div>
+
                             <br></br>
                             {(focusedVertexIndex !== null) ? <FoldVertexDialogue pattern={foldPattern} changeSetUp={changeSetUp} setIsFolding={setIsFolding}/> : <></>}
                             <br></br><br></br>
