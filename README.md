@@ -19,11 +19,9 @@ The project combines:
 A key part of the project was analysing the performance and trade-offs of different numerical approaches rather than treating the simulator purely as a visualisation tool.
 
 ## Demo
-
 A public demo is currently being prepared.
+Demo: https://mikun05.github.io/Origami.io
 
-<!-- Replace with deployed URL -->
-<!-- Demo: https://mikun05.github.io/Origami.io/ -->
 
 ## Features
 
