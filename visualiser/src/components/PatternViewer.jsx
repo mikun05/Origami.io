@@ -462,9 +462,19 @@ const PatternViewer = (props) => {
 
     const handlePointerOver = (event) => {
         if (!pointsRef.current) return;
-        const index = raycastVertex(event); 
-        if (index !== focusedVertexIndex) {updatePointsListState('vertex hover color', index, VertexColor.Hovered, VertexSizes.Clicked);}
 
+        document.body.style.cursor = 'pointer';
+
+        const index = raycastVertex(event);
+
+        if (index !== focusedVertexIndex) {
+            updatePointsListState(
+                'vertex hover color',
+                index,
+                VertexColor.Hovered,
+                VertexSizes.Clicked
+            );
+        }
     } 
 
     const handleEdgePointerDown = (event) => {
@@ -478,6 +488,9 @@ const PatternViewer = (props) => {
         }
     } 
     
+    const handlePointerOut = () => {
+        document.body.style.cursor = 'auto';
+    }
     
     return (
         <>
@@ -495,7 +508,12 @@ const PatternViewer = (props) => {
                     <lineBasicMaterial vertexColors={true} lineWidth={40} />
                 </lineSegments> */}
 
-                <points ref={pointsRef} onClick={handlePointerDown} onPointerOver={handlePointerOver} >
+                <points 
+                    ref={pointsRef} 
+                    onClick={handlePointerDown} 
+                    onPointerOver={handlePointerOver}
+                    onPointerOut={handlePointerOut}
+                >
                     <bufferGeometry>
                         <bufferAttribute attach="attributes-position" args={[vertices, 3]} />
                         <bufferAttribute attach="attributes-color" args={[vertexColors, 3]} />
