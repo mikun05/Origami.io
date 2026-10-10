@@ -391,6 +391,10 @@ const PatternLoader = () => {
                                 <PatternViewer pattern={foldPattern} setUp={setUp}/>
                             </Canvas>
 
+                             
+
+                            {/* Tabling slider until further animation optimisations have been made.
+                            
                             <input 
                                 type="range" 
                                 onInput={(e) => {
@@ -404,7 +408,7 @@ const PatternLoader = () => {
                                 onPointerDown={() => simulateFolding(pendingAngleRef.current)}
                                 //onPointerUp={(e) => {setUniformAngle(e.target.value); handleFoldEdge(e.target.value, false)}}  
                                 // onMouseDown={(e) => {setPendingAngle(e.target.value); simulateFolding(e.target.value)}}  
-                                name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required />
+                                name="uniformFoldEdgesAroundVertexAngle" value={uniformAngle} min="0" max="180" required /> */}
                         </div>
 
                         <div style={{flexDirection: 'column', gap:'2rem'}}>
