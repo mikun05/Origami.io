@@ -44,3 +44,69 @@
   outline: 2px solid black;
   outline-offset: 3px;
 }
+
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: -2rem;
+  text-align: center;
+  min-height: 100vh;
+}
+
+.loader-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.loader-description {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.65;
+  max-width: 300px;
+}
+
+.loader-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.loader-header h2 {
+  margin: 0;
+}
+
+
+.accordion-frame {
+  opacity: 0;
+  animation: show-frame 5s step-end infinite;
+}
+
+/* Six folding states, followed by five unfolding states */
+.frame-0 { animation-delay: 0s; }
+.frame-1 { animation-delay: -0.5s; }
+.frame-2 { animation-delay: -1s; }
+.frame-3 { animation-delay: -1.5s; }
+.frame-4 { animation-delay: -2s; }
+.frame-5 { animation-delay: -2.5s; }
+
+@keyframes show-frame {
+  0%, 9.99% {
+    opacity: 1;
+  }
+
+  10%, 100% {
+    opacity: 0;
+  }
+}
+
+.accordion {
+  width: 220px;
+  height: 60px;
+  display: block;
+  overflow: visible;}

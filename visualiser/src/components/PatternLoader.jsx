@@ -11,9 +11,9 @@ import ApproxOptions from "./ApproxOptions";
 import Options from "./Options";
 import Results from "./Results";
 import HelpModal from './HelpModal';
-import MenuButton from './ui/InfoButton';
-import { BACKEND_URL } from '../config'
 import InfoButton from "./ui/InfoButton";
+import Loader from './ui/Loader';
+import { BACKEND_URL } from '../config'
 
 const FoldVertexDialogue = (props) => {
     const { focusedVertexIndex, setFoldPattern, foldOptions, setFoldOptions, uniformAngle, setUniformAngle, setFoldResults, foldResults, origamiModel} = useContext(PatternContext);
@@ -228,13 +228,38 @@ const PatternLoader = () => {
         fetchFoldPattern();
     }, []);
 
-    const fetchFoldPattern = () => {
-        axios.post(`${BACKEND_URL}/get-fold-pattern`, { patternId: 'wbb' })
-            .then(response => {
-                changeSetUp(true)
+    const fetchFoldPattern = async () => {
+        const MAX_RETRIES = 10;
+        const RETRY_DELAY = 5000;
+
+        for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            try {
+                const response = await axios.post(
+                    `${BACKEND_URL}/get-fold-pattern`,
+                    { patternId: 'wbb' },
+                    { timeout: 10000 }
+                );
+
+                changeSetUp(true);
                 setFoldPattern(response.data);
-            })
-            .catch(error => console.error("Error fetching pattern data:", error));
+                return;
+
+            } catch (error) {
+                console.error(
+                    `Failed to fetch fold pattern (attempt ${attempt + 1}):`,
+                    error
+                );
+
+                if (attempt === MAX_RETRIES - 1) {
+                    console.error("Simulation server unavailable.");
+                    return;
+                }
+
+                await new Promise(resolve =>
+                    setTimeout(resolve, RETRY_DELAY)
+                );
+            }
+        }
     };
 
     // const handleFoldEdge = (vertexIndex, edgeIndex, angle, sym) => {
@@ -416,7 +441,7 @@ const PatternLoader = () => {
                     </div>
                 </div>
             ) : (
-                <p>Loading...</p>
+                <Loader />
             )}
         </div>
     );
